@@ -9,7 +9,7 @@ const cors=require("cors")
 
 app.use(cors());
 app.use(express.json());
-app.use("/ldss", router);
+app.use("/disability_support_api", router);
 app.use('/uploads', express.static('uploads'));
 
 
