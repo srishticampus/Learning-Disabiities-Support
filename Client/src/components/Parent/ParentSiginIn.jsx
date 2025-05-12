@@ -8,6 +8,7 @@ import Footer from '../Footer/Footer';
 import axios from "axios";
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { baseUrl } from '../../baseUrl';
 
 const ParentSiginIn = () => {
     const textFieldStyle = { height: "65px", width: "360px", display: "flex", flexDirection: "column", justifyContent: "start", position: "relative" }
@@ -152,7 +153,7 @@ const naviate=useNavigate();
         formData.append('profilePic', data.profilePic);
         formData.append('agreed', checked)
 
-        const response = await axios.post("http://localhost:4000/ldss/parent/registration", formData);
+        const response = await axios.post(`${baseUrl}parent/registration`, formData);
 
         const result = response.data;
         console.log(result);

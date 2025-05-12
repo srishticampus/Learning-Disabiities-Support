@@ -16,6 +16,7 @@ import Fade from '@mui/material/Fade';
 import CloseIcon from '@mui/icons-material/Close';
 import axios from "axios";
 import { toast } from 'react-toastify';
+import { baseUrl } from '../../baseUrl';
 
 const addChildStyle = {
   position: 'absolute',
@@ -85,7 +86,7 @@ const ParentChildProfile = () => {
     e.preventDefault();
     const token=localStorage.getItem("token");
     console.log(childData);
-    const child= await axios.post(`http://localhost:4000/ldss/parent/addchild/${parentdetails._id}`,childData,{
+    const child= await axios.post(`${baseUrl}parent/addchild/${parentdetails._id}`,childData,{
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -104,7 +105,7 @@ const ParentChildProfile = () => {
     const token=localStorage.getItem("token");
     const parentdetails=localStorage.getItem("parentdetails");
     const parent=JSON.parse(parentdetails);
-    const child= await axios.get(`http://localhost:4000/ldss/parent/getallchild`,{
+    const child= await axios.get(`${baseUrl}parent/getallchild`,{
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -141,7 +142,7 @@ const ParentChildProfile = () => {
     const token=localStorage.getItem("token");
     const parentdetails=localStorage.getItem("parentdetails");
     const parent=JSON.parse(parentdetails);
-    const child= await axios.get(`http://localhost:4000/ldss/parent/getchild/${parent._id}/${childId}`,{
+    const child= await axios.get(`${baseUrl}parent/getchild/${parent._id}/${childId}`,{
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -162,7 +163,7 @@ const ParentChildProfile = () => {
     const token=localStorage.getItem("token");
     const parentdetails=localStorage.getItem("parentdetails");
     const parent=JSON.parse(parentdetails);
-    const child= await axios.post(`http://localhost:4000/ldss/parent/updatechild/${parent._id}/${currentChildId}`,editchild,{
+    const child= await axios.post(`${baseUrl}parent/updatechild/${parent._id}/${currentChildId}`,editchild,{
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -185,7 +186,7 @@ const ParentChildProfile = () => {
     const token=localStorage.getItem("token");
     const parentdetails=localStorage.getItem("parentdetails");
     const parent=JSON.parse(parentdetails);
-    const child= await axios.delete(`http://localhost:4000/ldss/parent/deletechild/${parent._id}/${childId}`,{
+    const child= await axios.delete(`${baseUrl}parent/deletechild/${parent._id}/${childId}`,{
       headers: {
         Authorization: `Bearer ${token}`,
       },
