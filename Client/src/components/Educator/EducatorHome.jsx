@@ -37,6 +37,7 @@ import axios from "axios";
 import CloseIcon from '@mui/icons-material/Close';
 import Backdrop from '@mui/material/Backdrop';
 import { toast } from 'react-toastify';
+import { baseUrl } from '../../baseUrl';
 
 const EducatorHome = () => {
     const homebg = {
@@ -48,7 +49,7 @@ const EducatorHome = () => {
     const fetchEducator = async () => {
         const token = localStorage.getItem('token');
         const decoded = jwtDecode(token);
-        const educator = await axios.get(`http://localhost:4000/ldss/educator/geteducator/${decoded.id}`, {
+        const educator = await axios.get(`${baseUrl}educator/geteducator/${decoded.id}`, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },

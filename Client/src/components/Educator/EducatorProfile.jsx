@@ -16,6 +16,7 @@ import axios from 'axios';
 import background from "../../assets/Frame 12.png";
 import profileFrame from "../../assets/profileFrame.png";
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import { baseUrl } from '../../baseUrl';
 
 const EducatorProfile = () => {
     const profilebg = {
@@ -163,7 +164,7 @@ const EducatorProfile = () => {
 
         console.log(data);
         const token = localStorage.getItem("token");
-        const updated = await axios.post(`http://localhost:4000/ldss/educator/updateeducator/${educatorDetails._id}`, formData, {
+        const updated = await axios.post(`${baseUrl}educator/updateeducator/${educatorDetails._id}`, formData, {
             headers: {
                 Authorization: `Bearer ${token}`,
                 // 'Content-Type': 'multipart/form-data'
@@ -186,7 +187,7 @@ const EducatorProfile = () => {
 
             const token = localStorage.getItem("token");
             const educatorDetail = JSON.parse(localStorage.getItem("educatorDetails"));
-            const res = await axios.get(`http://localhost:4000/ldss/educator/geteducator/${educatorDetails._id}`, {
+            const res = await axios.get(`${baseUrl}educator/geteducator/${educatorDetails._id}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -222,7 +223,7 @@ const EducatorProfile = () => {
             profilePic: null, // leave this null so user can choose a new one
         });
         setImagePreview(educatorDetails?.profilePic?.filename
-            ? `http://localhost:4000/uploads/${educatorDetails.profilePic.filename}`
+            ? `${baseUrl}uploads/${educatorDetails.profilePic.filename}`
             : null);
         setEditOpen(true);
     }
@@ -428,7 +429,7 @@ const EducatorProfile = () => {
                             {
                                 educatorDetails.profilePic?.filename ? (
                                     <Avatar sx={{ height: "100%", width: "180px" }}
-                                        src={`http://localhost:4000/uploads/${educatorDetails?.profilePic?.filename}`} alt={educatorDetails?.name}
+                                        src={`${baseUrl}uploads/${educatorDetails?.profilePic?.filename}`} alt={educatorDetails?.name}
                                     />
                                 ) :
                                     (

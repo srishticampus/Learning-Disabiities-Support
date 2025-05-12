@@ -7,6 +7,7 @@ import Footer from '../Footer/Footer';
 import axios from "axios";
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { baseUrl } from '../../baseUrl';
 
 
 
@@ -26,7 +27,7 @@ const ParentLogin = () => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        const response = await axios.post("http://localhost:4000/ldss/parent/login", data);
+        const response = await axios.post(`${baseUrl}parent/login`, data);
 
         const jwtToken = response.data.token;
         const message = response.data.message;

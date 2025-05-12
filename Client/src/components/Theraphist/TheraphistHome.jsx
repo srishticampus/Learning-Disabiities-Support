@@ -37,6 +37,7 @@ import axios from "axios";
 import CloseIcon from '@mui/icons-material/Close';
 import Backdrop from '@mui/material/Backdrop';
 import { toast } from 'react-toastify';
+import { baseUrl } from '../../baseUrl';
 
 const TheraphistHome = () => {
     const homebg = {
@@ -48,7 +49,7 @@ const TheraphistHome = () => {
     const fetchTheraphist = async () => {
         const token = localStorage.getItem('token');
         const decoded = jwtDecode(token);
-        const theraphist = await axios.get(`http://localhost:4000/ldss/theraphist/gettheraphist/${decoded.id}`, {
+        const theraphist = await axios.get(`${baseUrl}theraphist/gettheraphist/${decoded.id}`, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },

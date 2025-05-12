@@ -37,6 +37,7 @@ import axios from "axios";
 import CloseIcon from '@mui/icons-material/Close';
 import Backdrop from '@mui/material/Backdrop';
 import { toast } from 'react-toastify';
+import { baseUrl } from '../../baseUrl';
 
 
 const ParentHome = () => {
@@ -49,7 +50,7 @@ const ParentHome = () => {
     const fetchUser=async()=>{
         const token = localStorage.getItem('token');
         const decoded = jwtDecode(token);
-        const parent=await axios.get(`http://localhost:4000/ldss/parent/getparent/${decoded.id}`,{
+        const parent=await axios.get(`${baseUrl}parent/getparent/${decoded.id}`,{
             headers: {
               Authorization: `Bearer ${token}`,
             },
