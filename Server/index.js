@@ -7,11 +7,16 @@ const db = require("./dbConnection");
 const router = require("./router");
 const cors=require("cors")
 
-app.use(cors());
+// In your Express backend
+app.use(cors({
+  origin: 'http://localhost:5173', // Your frontend URL
+  credentials: true
+}));
 app.use(express.json());
 app.use("/", router);
 app.use('/uploads', express.static('uploads'));
 
+// In your Express backend
 
 
 app.listen(PORT, () => {

@@ -1,4 +1,5 @@
 const parentModel=require("../Models/parentModel");
+const requestModel=require("../Models/requestModel")
 const bcrypt=require("bcryptjs");
 const multer=require("multer");
 const jwt = require("jsonwebtoken");
@@ -137,6 +138,26 @@ const getParentById=async(req,res)=>{
         console.log(error.message);
         res.status(500).json({message:error.message});
     }
+};
+const getAllParents=async(req,res)=>{
+    try {
+        const allparents=await parentModel.find();
+        if(!allparents){
+             return res.json({
+                message:'no parents where found'
+            })
+        };
+        return res.json({
+            message:"all parents found",
+            allparents
+        })
+        
+    } catch (error) {
+        console.log(error.message);
+        res.json({
+            message:error.message
+        })
+    }
 }
 const editParentById = async (req, res) => {
     try {
@@ -162,4 +183,30 @@ const editParentById = async (req, res) => {
     }
 };
 
-module.exports={parentRegister,uploadProfilePic,parentLogin,parentForgotPassword,parentResetPassword,getParentById,editParentById};
+const getAcceptedEducator=async(req,res)=>{
+    try {
+        const parentId=req.params.id;
+        const acceptedEducators= await requestModel.find({
+            parentId:parentId,
+            recipientRole:"educator",
+            status:"accepted"
+        }).populate("recipientId");
+        if(acceptedEducators.length===0){
+            return res.json({
+                message:'Educator not accpted you'
+            })
+        };
+        return res.json({
+            message:"Accepted educators fetched",
+            acceptedEducators
+        });
+        
+    } catch (error) {
+        console.log(error.message);
+        res.json({
+            message:error.message
+        })
+    }
+}
+
+module.exports={parentRegister,uploadProfilePic,parentLogin,parentForgotPassword,parentResetPassword,getParentById,getAllParents,editParentById,getAcceptedEducator};

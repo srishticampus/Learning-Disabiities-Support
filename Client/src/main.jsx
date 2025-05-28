@@ -10,6 +10,6 @@ createRoot(document.getElementById('root')).render(
   <BrowserRouter basename='disability_support'>
   <StrictMode>
     <App />
-  </StrictMode>,
+  </StrictMode>
   </BrowserRouter>
 )

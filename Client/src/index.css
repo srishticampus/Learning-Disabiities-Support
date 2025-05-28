@@ -1,4 +1,9 @@
 *{
     margin: 0;
     font-family: 'Roboto', sans-serif;
+    height: "100%";
+}
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
 }

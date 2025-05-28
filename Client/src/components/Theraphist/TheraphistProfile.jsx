@@ -397,6 +397,12 @@ const TheraphistProfile = () => {
                 <Box display={"flex"} justifyContent={"center"} alignItems={"center"} sx={{ height: "46px", background: "#DBE8FA" }}>
                     <Typography color='primary' textAlign={"center"} sx={{ fontSize: "18px", fontWeight: "600" }}>Profile</Typography>
                 </Box>
+                {!theraphistdetails.languages && <Link to='/theraphist/personalinfo' >
+                    <Button variant="contained" color='secondary' sx={{
+                        borderRadius: "15px", mt
+                            : "10px", p: "10px 20px", width: "100%"
+                    }}>Add personal details</Button>
+                </Link>}
                 <Box display={"flex"} justifyContent={"start"} alignItems={"start"} flexDirection={"column"} sx={{ mt: "20px", ml: "50px", mr: "50px", height: '320px' }}>
                     <Breadcrumbs aria-label="breadcrumb" separator="›">
                         <Link style={{ fontSize: "12px", fontWeight: "500", color: "#7F7F7F", textDecoration: "none" }} underline="hover" to="/">
@@ -446,6 +452,55 @@ const TheraphistProfile = () => {
                         </Box>
                     </Box>
                 </Box>
+
+                 {/* personal info */}
+
+                 {theraphistdetails.certification &&
+                        <Box display={"flex"} justifyContent={"space-between"} alignItems={"start"} sx={{ height: "323px", background: '#F6F7F9', borderRadius: "20px", width: "100%", padding: "20px 60px", mt: "50px", flexDirection: "column" }}>
+                            <Box display={"flex"} justifyContent={"center"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "30px" }} >
+                                <Box>
+                                    <Typography color='primary' sx={{ fontSize: "24px", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "20px" }}>
+                                        Personal Info
+                                        <BorderColorOutlinedIcon />
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ gap: "400px" }} width={"100%"} display={"flex"} justifyContent={"space-between"} alignItems={"start"}>
+                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"} gap={3}>
+                                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                            <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Educational Qualifications</Typography>
+                                            <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>{theraphistdetails.educationalQualification
+                                            }</Typography>
+                                        </Box>
+                                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                            <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Language</Typography>
+                                            <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>{theraphistdetails.languages}</Typography>
+                                        </Box>
+                                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                            <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Certification</Typography>
+                                            <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Adobe Certified Professional in Photoshop & Illustrator</Typography>
+                                        </Box>
+                                    </Box>
+                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"} gap={3} sx={{ borderLeft: "1px solid black" }}>
+                                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"} ml={5}>
+                                            <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Years of Experience</Typography>
+                                            <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>{theraphistdetails.yearsOfExperience
+                                            }</Typography>
+                                        </Box>
+                                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"} ml={5}>
+                                            <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Availablity</Typography>
+                                            <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>{theraphistdetails.availability
+                                            }</Typography>
+                                        </Box>
+
+                                    </Box>
+                                </Box>
+                            </Box>
+
+
+
+
+                        </Box>
+                    }
 
 
             </Box>

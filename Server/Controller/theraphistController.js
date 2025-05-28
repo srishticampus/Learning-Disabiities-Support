@@ -18,7 +18,11 @@ const storage=multer.diskStorage({
 })
 const uploadProfilePic=multer(
     {storage:storage}
-    ).single("profilePic")
+    ).single("profilePic");
+
+    const uploadCertification=multer(
+        {storage:storage}
+    ).single("certification")
 
 const theraphistRegister= async (req,res)=>{
     try {
@@ -162,5 +166,87 @@ const editTheraphistById = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-module.exports={uploadProfilePic, theraphistRegister,theraphistLogin,theraphistForgotPassword,theraphistResetPassword,getTheraphistById,editTheraphistById};
+const getAllTheraphists=async(req,res)=>{
+    try {
+        const theraphists=await theraphistModel.find();
+        if(!theraphists){
+            return res.json({message:"No theraphist found."})
+        }
+        return res.json({
+            message:"theraphist found with the provided id",
+            theraphist:theraphists
+        })
+        
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).json({message:error.message});
+    }
+}
+const addTheraphistPersonal=async(req,res)=>{
+    try {
+        const{educationalQualification,yearsOfExperience,languages,availability,specialities}=req.body;
+        const certification=req.file;
+        const theraphistId=req.params.id;
+        const theraphist=await theraphistModel.findById(theraphistId);
+        if(!theraphist){
+            return res.json({message:"No theraphist found with this id."})
+        };
+        theraphist.educationalQualification=educationalQualification;
+        theraphist.yearsOfExperience=yearsOfExperience;
+        theraphist.languages=languages;
+        theraphist.availability=availability;
+        theraphist.certification=certification;
+        await theraphist.save();
+        res.json({
+            message:"theraphist personal details added successfully.",
+            theraphist:theraphist
+        })
+        
+    } catch (error) {
+        console.log(error.message);
+        res.json({
+            message:error.message
+        })
+    }
+ };
+ const theraphistRequestAccept=async(req,res)=>{
+    try {
+        const theraphistId=req.params.id;
+        const theraphistUpdate=await theraphistModel.findByIdAndUpdate(theraphistId,{isAdminApproved:true},{new:true});
+        if(!theraphistUpdate){
+           return res.json({
+                message:"problem in accepting request",
+            })
+        };
+        return res.json({
+            message:"Request accepted by admin",
+            theraphistUpdate
+        });
+        
+    } catch (error) {
+        console.log(error.message);
+        res.json({
+            message:error.message
+        })
+    }
+ };
+
+ const adminDeleteTheraphist=async(req,res)=>{
+    try {
+        const theraphistId=req.params.id;
+        const deleteTheraphist=await theraphistModel.findByIdAndDelete(theraphistId);
+        return res.json({
+            message:"rejected",
+            deleteTheraphist
+
+        })
+        
+    } catch (error) {
+        console.log(error.message);
+        res.json({
+            message:error.message
+        })
+    }
+ }
+module.exports={uploadProfilePic,uploadCertification, theraphistRegister,theraphistLogin,theraphistForgotPassword,theraphistResetPassword,getTheraphistById,editTheraphistById,getAllTheraphists,addTheraphistPersonal,theraphistRequestAccept,adminDeleteTheraphist};
 

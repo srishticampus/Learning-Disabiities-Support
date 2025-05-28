@@ -23,9 +23,9 @@ const pages = [
     { label: 'About', path: '/parent/about' },
     { label: 'Contact', path: '/parent/contact' },
     { label: 'Child', path: '/parent/childprofile' },
-    { label: 'Plan', path: '#' },
-    { label: 'Meetings', path: '#' },
-    { label: 'Activities', path: '#' },
+    { label: 'learning', path: '/parent/learningplan' },
+    { label: 'Meetings', path: '/parent/meeting' },
+    { label: 'Activities', path: '/parent/activites' },
     
 ];
 
@@ -33,7 +33,7 @@ const ParentNavbar = ({ homebg = {},aboutBg={}, profilebg = {}, navigateToProfil
     // console.log(parent.profilePic?.filename, "from navbar");
     const [anchorElNav, setAnchorElNav] = React.useState(null);
     const [anchorElUser, setAnchorElUser] = React.useState(null);
-
+    
     const handleOpenNavMenu = (event) => {
         setAnchorElNav(event.currentTarget);
     };
@@ -171,8 +171,8 @@ const ParentNavbar = ({ homebg = {},aboutBg={}, profilebg = {}, navigateToProfil
                             ))}
                         </Box>
                         <Box display={"flex"} justifyContent={"center"} alignItems={"center"} sx={{ flexGrow: 0, gap: "30px" }}>
+                            <Link to={'/parent/chat'}><SmsOutlinedIcon color='primary' sx={{ height: '24px' }} /></Link>
                             <NotificationsOutlinedIcon color='primary' sx={{ height: '24px' }} />
-                            <SmsOutlinedIcon color='primary' sx={{ height: '24px' }} />
                             <Box display={"flex"} justifyContent={"center"} alignItems={"center"} sx={{ gap: "30px" }}>
                                 <Typography color='secondary'>Hi, {parentdetails?.name}</Typography>
                                 {/* <Avatar/> */}

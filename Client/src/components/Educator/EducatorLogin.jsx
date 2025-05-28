@@ -36,6 +36,9 @@ const EducatorLogin = () => {
             toast.success("logged in successfully!")
             navigate("/educator/home");
         }
+        else if (message === "Admin not approved you") {
+            toast.error("Admin not approved you");
+        }
 
         else {
             toast.error("Invalid email or password");
@@ -43,10 +46,14 @@ const EducatorLogin = () => {
 
         console.log(jwtToken);
         console.log(message);
-    } 
-  return (
-    <>
-       <ParentNavbarSiginIn siginupStyle={siginupStyle} />
+        setData({
+            email: "",
+            password: ""
+        })
+    }
+    return (
+        <>
+            <ParentNavbarSiginIn siginupStyle={siginupStyle} />
             <Container>
                 <Box component="img" src={background} sx={{ position: "absolute", top: -50, left: 0, objectFit: 'cover', zIndex: -1 }}></Box>
                 <Box display={'flex'} flexDirection={'column'} alignItems={'center'} sx={{ marginTop: "80px" }}>
@@ -88,10 +95,10 @@ const EducatorLogin = () => {
                             </div>
                         </Stack>
                         <Box display={'flex'} alignItems={'flex-end'} justifyContent={'center'}>
-                            <Link to="/educator/forgotpassword" style={{textDecoration:"none"}}>
-                            <Typography variant='p' color='primary' sx={{ marginTop: "10px", fontSize: "12px", fontWeight: '500' }}>Forgot password</Typography>
+                            <Link to="/educator/forgotpassword" style={{ textDecoration: "none" }}>
+                                <Typography variant='p' color='primary' sx={{ marginTop: "10px", fontSize: "12px", fontWeight: '500' }}>Forgot password</Typography>
                             </Link>
-                            
+
                         </Box>
 
                     </Box>
@@ -110,8 +117,8 @@ const EducatorLogin = () => {
 
             </Container>
             <Footer />
-    </>
-  )
+        </>
+    )
 }
 
 export default EducatorLogin

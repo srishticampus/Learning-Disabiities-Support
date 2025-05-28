@@ -43,6 +43,30 @@ const theraphistSchema = mongoose.Schema({
     isAdminApproved: {
         type: Boolean,
         default: false
+    },
+    educationalQualification:{
+        type: String,
+        require:true
+    },
+    yearsOfExperience:{
+        type: Number,
+        require:true
+    },
+    languages:{
+        type: String,
+        require:true
+    },
+    availability:{
+        type: String,
+        require:true
+    },
+    certification:{
+        type: Object,
+        require:true
+    },
+    specialities:{
+        type: String,
+        require:true
     }
 }, { timeStamps: true }
 );
