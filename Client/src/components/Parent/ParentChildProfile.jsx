@@ -16,6 +16,7 @@ import Fade from '@mui/material/Fade';
 import CloseIcon from '@mui/icons-material/Close';
 import axios from "axios";
 import { toast } from 'react-toastify';
+import { baseUrl } from '../../baseUrl';
 
 const addChildStyle = {
   position: 'absolute',
@@ -83,23 +84,28 @@ const ParentChildProfile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
-    const child = await axios.post(`http://localhost:4000/ldss/parent/addchild/${parentdetails._id}`, childData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (child.data.message === "Child added successfully.") {
-      toast.success("Child added successfully.");
-      fetchAllChilds();
-      handleAddChildClose();
-      // Reset form
-      setChildData({
-        name: "",
-        schoolName: "",
-        gender: "",
-        description: "",
-        dateOfBirth: ""
+    try {
+      const child = await axios.post(`${baseUrl}parent/addchild/${parentdetails._id}`, childData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+      if (child.data.message === "Child added successfully.") {
+        toast.success("Child added successfully.");
+        fetchAllChilds();
+        handleAddChildClose();
+        // Reset form
+        setChildData({
+          name: "",
+          schoolName: "",
+          gender: "",
+          description: "",
+          dateOfBirth: ""
+        });
+      }
+    } catch (error) {
+      toast.error("Error adding child");
+      console.error(error);
     }
   };
 
@@ -111,19 +117,23 @@ const ParentChildProfile = () => {
     const token = localStorage.getItem("token");
     const parentdetails = localStorage.getItem("parentdetails");
     const parent = JSON.parse(parentdetails);
-    const child = await axios.get(`http://localhost:4000/ldss/parent/getallchild`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    const childsbyparent = child.data.child.filter((child) => parent._id === child.parentId)
-    setChildDetails(childsbyparent);
-    setFilteredChildDetails(childsbyparent); // Initialize filtered list with all children
+    try {
+      const child = await axios.get(`${baseUrl}parent/getallchild`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const childsbyparent = child.data.child.filter((child) => parent._id === child.parentId);
+      setChildDetails(childsbyparent);
+      setFilteredChildDetails(childsbyparent); // Initialize filtered list with all children
+    } catch (error) {
+      console.error("Error fetching children:", error);
+    }
   };
   
   useEffect(() => {
     fetchAllChilds();
-  }, [])
+  }, []);
 
   // edit child modal
   const [currentChildId, setCurrentChildId] = useState("");
@@ -149,18 +159,22 @@ const ParentChildProfile = () => {
     const token = localStorage.getItem("token");
     const parentdetails = localStorage.getItem("parentdetails");
     const parent = JSON.parse(parentdetails);
-    const child = await axios.get(`http://localhost:4000/ldss/parent/getchild/${parent._id}/${childId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    setEditChild({
-      name: child.data.child.name,
-      schoolName: child.data.child.schoolName,
-      description: child.data.child.description,
-      dateOfBirth: child.data.child.dateOfBirth,
-      gender: child.data.child.gender
-    })
+    try {
+      const child = await axios.get(`${baseUrl}parent/getchild/${parent._id}/${childId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setEditChild({
+        name: child.data.child.name,
+        schoolName: child.data.child.schoolName,
+        description: child.data.child.description,
+        dateOfBirth: child.data.child.dateOfBirth,
+        gender: child.data.child.gender
+      });
+    } catch (error) {
+      console.error("Error fetching child details:", error);
+    }
   }
   
   const handleEditSubmit = async (e) => {
@@ -168,15 +182,20 @@ const ParentChildProfile = () => {
     const token = localStorage.getItem("token");
     const parentdetails = localStorage.getItem("parentdetails");
     const parent = JSON.parse(parentdetails);
-    const child = await axios.post(`http://localhost:4000/ldss/parent/updatechild/${parent._id}/${currentChildId}`, editchild, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (child.data.message === "Child updated successfully.") {
-      toast.success("Child updated successfully.");
-      fetchAllChilds();
-      handleEditChildClose();
+    try {
+      const child = await axios.post(`${baseUrl}parent/updatechild/${parent._id}/${currentChildId}`, editchild, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (child.data.message === "Child updated successfully.") {
+        toast.success("Child updated successfully.");
+        fetchAllChilds();
+        handleEditChildClose();
+      }
+    } catch (error) {
+      toast.error("Error updating child");
+      console.error(error);
     }
   }
   
@@ -191,14 +210,19 @@ const ParentChildProfile = () => {
     const token = localStorage.getItem("token");
     const parentdetails = localStorage.getItem("parentdetails");
     const parent = JSON.parse(parentdetails);
-    const child = await axios.delete(`http://localhost:4000/ldss/parent/deletechild/${parent._id}/${childId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (child.data.message === "Child deleted successfully.") {
-      toast.success("Child deleted successfully.");
-      fetchAllChilds();
+    try {
+      const child = await axios.delete(`${baseUrl}parent/deletechild/${parent._id}/${childId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (child.data.message === "Child deleted successfully.") {
+        toast.success("Child deleted successfully.");
+        fetchAllChilds();
+      }
+    } catch (error) {
+      toast.error("Error deleting child");
+      console.error(error);
     }
   }
   
@@ -260,14 +284,17 @@ const ParentChildProfile = () => {
               <Grid key={index} item xs={12} md={6} width={"49%"}>
                 <Box display={"flex"} flexDirection={"column"} alignItems={"start"} sx={{ p: "50px 30px", height: "400px", background: "#F6F7F9", borderRadius: "25px", gap: "20px", width: "100%" }}>
                   <Box width={"100%"} display={"flex"} gap={5} justifyContent={"space-between"} alignItems={"center"}>
-                    <Typography sx={{ fontSize: "32px", fontWeight: "600" }} color='primary' 
-                      onClick={() => { fetchChildDetail(child._id) }}
-                    >{child.name} <BorderColorOutlinedIcon /></Typography>
-                    <Typography sx={{ color: "#E52323" }}>
+                    <Typography sx={{ fontSize: "32px", fontWeight: "600" }} color='primary'>{child.name}</Typography>
+                    <Box>
+                      <BorderColorOutlinedIcon 
+                        onClick={() => { fetchChildDetail(child._id) }}
+                        sx={{ color: "#1967D2", cursor: "pointer", mr: 2 }}
+                      />
                       <DeleteOutlinedIcon 
                         onClick={() => handleDeleteChild(child._id)}
+                        sx={{ color: "#E52323", cursor: "pointer" }}
                       />
-                    </Typography>
+                    </Box>
                   </Box>
                   <Box width={"100%"} display={"flex"} justifyContent={"space-between"}>
                     <Box sx={{ gap: "20px" }} display={"flex"} flexDirection={"column"} alignItems={"start"}>
@@ -339,7 +366,7 @@ const ParentChildProfile = () => {
             <Box sx={addChildStyle}>
               <Box display={"flex"} justifyContent={"space-between"} alignItems={"space-between"}>
                 <Typography variant='h4' sx={{ fontSize: "18px", fontWeight: "600" }}>Add Child</Typography>
-                <CloseIcon onClick={handleAddChildClose} sx={{ fontSize: "18px" }} />
+                <CloseIcon onClick={handleAddChildClose} sx={{ fontSize: "18px", cursor: "pointer" }} />
               </Box>
               <hr />
               <Container sx={{ position: "relative", mt: "50px" }} maxWidth="x-lg">
@@ -354,6 +381,7 @@ const ParentChildProfile = () => {
                           type='text'
                           value={childData.name}
                           onChange={handleChange}
+                          required
                         />
                       </div>
                       <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginTop: '20px', textFieldStyle }}>
@@ -377,6 +405,7 @@ const ParentChildProfile = () => {
                           name='schoolName'
                           value={childData.schoolName}
                           onChange={handleChange}
+                          required
                         />
                       </div>
                       <div style={textFieldStyle}>
@@ -387,6 +416,7 @@ const ParentChildProfile = () => {
                           type='date'
                           value={childData.dateOfBirth}
                           onChange={handleChange}
+                          required
                         />
                       </div>
                     </Stack>
@@ -406,6 +436,7 @@ const ParentChildProfile = () => {
                       color='secondary' 
                       sx={{ borderRadius: "25px", marginTop: "20px", height: "40px", width: '200px', padding: '10px 35px' }}
                       onClick={handleSubmit}
+                      disabled={!childData.name || !childData.schoolName || !childData.dateOfBirth || !childData.gender}
                     >Confirm</Button>
                   </Box>
                 </Box>
@@ -435,7 +466,7 @@ const ParentChildProfile = () => {
             <Box sx={editChildStyle}>
               <Box display={"flex"} justifyContent={"space-between"} alignItems={"space-between"}>
                 <Typography variant='h4' sx={{ fontSize: "18px", fontWeight: "600" }}>Edit Child</Typography>
-                <CloseIcon onClick={handleEditChildClose} sx={{ fontSize: "18px" }} />
+                <CloseIcon onClick={handleEditChildClose} sx={{ fontSize: "18px", cursor: "pointer" }} />
               </Box>
               <hr />
               <Container sx={{ position: "relative", mt: "50px" }} maxWidth="x-lg">
@@ -450,6 +481,7 @@ const ParentChildProfile = () => {
                           type='text'
                           value={editchild.name}
                           onChange={handleEditChange}
+                          required
                         />
                       </div>
                       <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginTop: '20px', textFieldStyle }}>
@@ -473,6 +505,7 @@ const ParentChildProfile = () => {
                           name='schoolName'
                           onChange={handleEditChange}
                           value={editchild.schoolName}
+                          required
                         />
                       </div>
                       <div style={textFieldStyle}>
@@ -483,6 +516,7 @@ const ParentChildProfile = () => {
                           type='date'
                           onChange={handleEditChange}
                           value={editchild.dateOfBirth}
+                          required
                         />
                       </div>
                     </Stack>
@@ -508,6 +542,7 @@ const ParentChildProfile = () => {
                       color='secondary' 
                       sx={{ borderRadius: "25px", marginTop: "20px", height: "40px", width: '200px', padding: '10px 35px' }}
                       onClick={handleEditSubmit}
+                      disabled={!editchild.name || !editchild.schoolName || !editchild.dateOfBirth || !editchild.gender}
                     >Update</Button>
                   </Box>
                 </Box>

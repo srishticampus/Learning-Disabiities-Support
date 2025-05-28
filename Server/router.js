@@ -35,6 +35,22 @@ router.put(
 );
 router.get('/admin/activity/:id',  activityController.getActivityById);
 
+const parentController = require("./Controller/parentController");
+
+const protectedRoute = require("./Middleware/protectedRoute");
+
+const educatorController = require("./Controller/educatorController");
+
+const theraphistController = require("./Controller/theraphistController");
+
+const adminController = require("./Controller/adminController");
+
+const childController = require("./Controller/childController");
+
+//Default route
+router.get("/", (req, res) => {
+  res.send("Welcome to the Disability Support System API");
+});
 
 /* ===================== PARENT ===================== */
 router.post("/parent/registration", parentController.uploadProfilePic, parentController.parentRegister);
@@ -78,6 +94,8 @@ router.post("/educator/addmeeting/:id/:childId", protectedRoute.protectedRoute, 
 router.get("/educator/viewmeeting/:id/:childId", protectedRoute.protectedRoute, meetingController.viewChildsMeeting);
 router.get("/educator/viewmeeting/:id", protectedRoute.protectedRoute, meetingController.viewAllmeetingsOfEducator);
 
+router.post("/admin/login", adminController.adminLogin);
+
 /* ===================== THERAPHIST ===================== */
 router.post("/theraphist/registration", theraphistController.uploadProfilePic, theraphistController.theraphistRegister);
 router.post("/theraphist/login", theraphistController.theraphistLogin);
@@ -88,8 +106,62 @@ router.post("/theraphist/updatetheraphist/:id", protectedRoute.protectedRoute, t
 router.get("/theraphist/getalltheraphist", protectedRoute.protectedRoute, theraphistController.getAllTheraphists);
 router.post("/theraphist/addpersonal/:id", protectedRoute.protectedRoute, theraphistController.uploadCertification, theraphistController.addTheraphistPersonal);
 
+
 /* ===================== REQUEST ===================== */
 router.post("/request/sendrequest", protectedRoute.protectedRoute, requestController.sendRequest);
+
+router.post(
+  "/parent/registration",
+  parentController.uploadProfilePic,
+  parentController.parentRegister
+);
+router.post("/parent/login", parentController.parentLogin);
+router.post("/parent/forgotpassword", parentController.parentForgotPassword);
+router.post(
+  "/parent/resetpassword/:email",
+  parentController.parentResetPassword
+);
+router.get(
+  "/parent/getparent/:id",
+  protectedRoute.protectedRoute,
+  parentController.getParentById
+);
+router.post(
+  "/parent/updateparent/:id",
+  protectedRoute.protectedRoute,
+  parentController.uploadProfilePic,
+  parentController.editParentById
+);
+router.post(
+  "/parent/addchild/:id",
+  protectedRoute.protectedRoute,
+  childController.addChildByParent
+);
+router.post(
+  "/parent/updatechild/:id/:childId",
+  protectedRoute.protectedRoute,
+  childController.editChildByParent
+);
+router.get(
+  "/parent/getchild/:id/:childId",
+  protectedRoute.protectedRoute,
+  childController.getOneChildDetail
+);
+router.get(
+  "/parent/getallchild",
+  protectedRoute.protectedRoute,
+  childController.getallChildDetails
+);
+router.get(
+  "/parent/getallchildofparent/:id",
+  protectedRoute.protectedRoute,
+  childController.getAllChildOfParent
+);
+router.delete(
+  "/parent/deletechild/:id/:childId",
+  protectedRoute.protectedRoute,
+  childController.deleteChildByParent
+);
 
 /* ===================== CHAT ===================== */
 router.post("/conversations", protectedRoute.protectedRoute, chatController.createConversation);
@@ -98,6 +170,7 @@ router.get("/conversations/:id", protectedRoute.protectedRoute, chatController.g
 router.post("/conversations/:id/messages", protectedRoute.protectedRoute, chatController.addMessage);
 router.patch("/conversations/:id/read", protectedRoute.protectedRoute, chatController.markAsRead);
 router.get("/parent/conversations/:parentId", protectedRoute.protectedRoute, chatController.getUserConversations);
+
 
 /* ===================== ACTIVITY ===================== */
 router.post(
@@ -110,5 +183,69 @@ router.get('/activity/getallactivities', protectedRoute.protectedRoute, activity
 router.get('/activity/parent/:parentId', protectedRoute.protectedRoute, activityController.getActivitiesByParent);
 router.patch('/activity/complete/:activityId', protectedRoute.protectedRoute, activityController.markActivityComplete);
 
+router.post(
+  "/educator/registration",
+  educatorController.uploadProfilePic,
+  educatorController.educatorRegister
+);
+router.post("/educator/login", educatorController.educatorLogin);
+router.post(
+  "/educator/forgotpassword",
+  educatorController.educatorForgotPassword
+);
+router.post(
+  "/educator/resetpassword/:email",
+  educatorController.educatorResetPassword
+);
+router.get(
+  "/educator/geteducator/:id",
+  protectedRoute.protectedRoute,
+  educatorController.getEducatorById
+);
+router.post(
+  "/educator/updateeducator/:id",
+  protectedRoute.protectedRoute,
+  educatorController.uploadProfilePic,
+  educatorController.editEducatorById
+);
+router.post(
+  "/educator/addpersonal/:id",
+  protectedRoute.protectedRoute,
+  educatorController.uploadCertification,
+  educatorController.addEducatorPersonal
+);
+router.get(
+  "/educator/getalleducators",
+  protectedRoute.protectedRoute,
+  educatorController.getAllEducators
+);
+
+
+
+router.post(
+  "/theraphist/registration",
+  theraphistController.uploadProfilePic,
+  theraphistController.theraphistRegister
+);
+router.post("/theraphist/login", theraphistController.theraphistLogin);
+router.post(
+  "/theraphist/forgotpassword",
+  theraphistController.theraphistForgotPassword
+);
+router.post(
+  "/theraphist/resetpassword/:email",
+  theraphistController.theraphistResetPassword
+);
+router.get(
+  "/theraphist/gettheraphist/:id",
+  protectedRoute.protectedRoute,
+  theraphistController.getTheraphistById
+);
+router.post(
+  "/theraphist/updatetheraphist/:id",
+  protectedRoute.protectedRoute,
+  theraphistController.uploadProfilePic,
+  theraphistController.editTheraphistById
+);
 
 module.exports = router;

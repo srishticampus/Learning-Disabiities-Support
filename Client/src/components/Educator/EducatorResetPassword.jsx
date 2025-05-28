@@ -7,6 +7,7 @@ import Footer from '../Footer/Footer';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify'; 
+import { baseUrl } from '../../baseUrl';
 
 const EducatorResetPassword = () => {
     const textFieldStyle = { height: "65px", width: "360px", display: "flex", flexDirection: "column", justifyContent: "start", position: "relative" };
@@ -66,7 +67,7 @@ const EducatorResetPassword = () => {
         if (!isValid) {
             return;
         }
-        const result= await axios.post(`http://localhost:4000/ldss/educator/resetpassword/${email}`,data);
+        const result= await axios.post(`${baseUrl}educator/resetpassword/${email}`,data);
 
         console.log(result);
 

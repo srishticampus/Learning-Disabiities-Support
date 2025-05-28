@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import ParentNavbar from '../Navbar/ParentNavbar'
-import contactbg from "../../assets/vector 10.png"
+import contactbg from "../../assets/Vector 10.png"
 import { Box, Button, Container, Stack, TextField, Typography, styled } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';

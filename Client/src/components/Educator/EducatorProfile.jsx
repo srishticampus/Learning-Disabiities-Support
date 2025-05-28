@@ -17,6 +17,7 @@ import background from "../../assets/Frame 12.png";
 import profileFrame from "../../assets/profileFrame.png";
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import UploadIcon from '@mui/icons-material/Upload';
+import { baseUrl } from '../../baseUrl';
 
 const EducatorProfile = () => {
     const profilebg = {
@@ -58,35 +59,18 @@ const EducatorProfile = () => {
         profilePic: null
     });
 
-    // Personal Info State with dummy data
+    // Personal Info State
     const [personalData, setPersonalData] = useState({
-        educationalQualification: "Bachelor's in Education",
-        yearsOfExperience: "5",
-        languages: "English, Tamil",
-        availability: "Full time",
+        educationalQualification: "",
+        yearsOfExperience: "",
+        languages: "",
+        availability: "",
         certification: null,
     });
 
     const [imagePreview, setImagePreview] = useState(null);
     const [certificationPreview, setCertificationPreview] = useState(null);
-    
-    // Educator details with dummy data
-    const [educatorDetails, setEducatorDetails] = useState({
-        name: "John Doe",
-        email: "john.doe@example.com",
-        address: "123 Main St, Chennai, Tamil Nadu",
-        phone: "9876543210",
-        profilePic: null,
-        educationalQualification: "Bachelor's in Education",
-        yearsOfExperience: "5",
-        languages: "English, Tamil",
-        availability: "Full time",
-        certification: {
-            filename: "certificate.jpg",
-            path: "/uploads/certificate.jpg"
-        }
-    });
-    
+    const [educatorDetails, setEducatorDetails] = useState(null);
     const [error, setError] = useState({});
     const [personalError, setPersonalError] = useState({});
     const [open, setOpen] = useState(false);
@@ -98,37 +82,14 @@ const EducatorProfile = () => {
         const educatorDetail = localStorage.getItem("educatorDetails");
         if (educatorDetail) {
             setEducatorDetails(JSON.parse(educatorDetail));
-        } else {
-            // Set dummy data if no educator details exist
-            setEducatorDetails({
-                name: "John Doe",
-                email: "john.doe@example.com",
-                address: "123 Main St, Chennai, Tamil Nadu",
-                phone: "9876543210",
-                profilePic: null,
-                educationalQualification: "Bachelor's in Education",
-                yearsOfExperience: "5",
-                languages: "English, Tamil",
-                availability: "Full time",
-                certification: {
-                    filename: "certificate.jpg",
-                    path: "/uploads/certificate.jpg"
-                }
-            });
         }
     }, []);
 
     useEffect(() => {
-        if (localStorage.getItem("educatorDetails") == null) {
-            navigate("/");
+        if (!localStorage.getItem("educatorDetails") && !localStorage.getItem("token")) {
+            navigate("/educator/login");
         }
-    });
-
-    useEffect(() => {
-        if (localStorage.getItem("educatorDetails") == null) {
-            navigate("/");
-        }
-    });
+    }, [navigate]);
 
     // Basic Info Handlers
     const handleDataChange = (e) => {
@@ -250,93 +211,108 @@ const EducatorProfile = () => {
 
     // Submit Handlers
     const handleBasicInfoSubmit = async (e) => {
+        e.preventDefault();
         const isValid = basicInfoValidation();
         if (!isValid) {
             return;
         }
-        e.preventDefault();
         
         const formData = new FormData();
         formData.append('name', data.name);
         formData.append('email', data.email);
         formData.append('address', data.address);
         formData.append('phone', data.phone);
-        formData.append('profilePic', data.profilePic);
+        if (data.profilePic) {
+            formData.append('profilePic', data.profilePic);
+        }
 
-        const token = localStorage.getItem("token");
-        const updated = await axios.post(
-            `http://localhost:4000/ldss/educator/updateeducator/${educatorDetails._id}`, 
-            formData, 
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            }
-        );
-
-        if (updated.data.message === "educator updated successfully.") {
-            toast.success("Educator updated successfully.")
-            
-            const res = await axios.get(
-                `http://localhost:4000/ldss/educator/geteducator/${educatorDetails._id}`, 
+        try {
+            const token = localStorage.getItem("token");
+            const updated = await axios.post(
+                `${baseUrl}educator/updateeducator/${educatorDetails._id}`, 
+                formData, 
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
                     },
                 }
             );
-            
-            localStorage.setItem("educatorDetails", JSON.stringify(res.data.educator));
-            setEducatorDetails(res.data.educator);
-            setEditOpen(false);
-        } else {
-            toast.error("Error in updating educator profile")
+
+            if (updated.data.message === "educator updated successfully.") {
+                toast.success("Educator updated successfully.");
+                
+                const res = await axios.get(
+                    `${baseUrl}educator/geteducator/${educatorDetails._id}`, 
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+                
+                localStorage.setItem("educatorDetails", JSON.stringify(res.data.educator));
+                setEducatorDetails(res.data.educator);
+                setEditOpen(false);
+            } else {
+                toast.error("Error in updating educator profile");
+            }
+        } catch (error) {
+            toast.error("Error updating profile");
+            console.error(error);
         }
-    }
+    };
 
     const handlePersonalInfoSubmit = async (e) => {
+        e.preventDefault();
         const isValid = personalInfoValidation();
         if (!isValid) {
             return;
         }
-        e.preventDefault();
         
         const formData = new FormData();
         formData.append("educationalQualification", personalData.educationalQualification);
         formData.append("yearsOfExperience", personalData.yearsOfExperience);
         formData.append("languages", personalData.languages);
         formData.append("availability", personalData.availability);
-        formData.append("certification", personalData.certification);
+        if (personalData.certification) {
+            formData.append("certification", personalData.certification);
+        }
 
-        const token = localStorage.getItem("token");
-        const updated = await axios.post(
-            `http://localhost:4000/ldss/educator/addpersonal/${educatorDetails._id}`, 
-            formData, 
-            {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    Authorization: `Bearer ${token}`,
-                }
-            }
-        );
-
-        if (updated.data.message === "educator personal details added successfully.") {
-            toast.success("Educator personal details updated successfully.");
-            
-            const res = await axios.get(
-                `http://localhost:4000/ldss/educator/geteducator/${educatorDetails._id}`, 
+        try {
+            const token = localStorage.getItem("token");
+            const updated = await axios.post(
+                `${baseUrl}educator/addpersonal/${educatorDetails._id}`, 
+                formData, 
                 {
                     headers: {
+                        'Content-Type': 'multipart/form-data',
                         Authorization: `Bearer ${token}`,
-                    },
+                    }
                 }
             );
-            
-            localStorage.setItem("educatorDetails", JSON.stringify(res.data.educator));
-            setEducatorDetails(res.data.educator);
-            setPersonalEditOpen(false);
-        } else {
-            toast.error("Error in updating educator personal details")
+
+            if (updated.data.message === "educator personal details added successfully.") {
+                toast.success("Educator personal details updated successfully.");
+                
+                const res = await axios.get(
+                    `${baseUrl}educator/geteducator/${educatorDetails._id}`, 
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+                
+                localStorage.setItem("educatorDetails", JSON.stringify(res.data.educator));
+                setEducatorDetails(res.data.educator);
+                setPersonalEditOpen(false);
+            } else {
+                toast.error("Error in updating educator personal details");
+            }
+        } catch (error) {
+            toast.error("Error updating personal details");
+            console.error(error);
         }
     };
 
@@ -345,6 +321,8 @@ const EducatorProfile = () => {
     const handleClose = () => setOpen(false);
 
     const handleEditOpen = () => {
+        if (!educatorDetails) return;
+        
         setData({
             name: educatorDetails.name || "",
             email: educatorDetails.email || "",
@@ -353,13 +331,16 @@ const EducatorProfile = () => {
             profilePic: null,
         });
         setImagePreview(educatorDetails?.profilePic?.filename
-            ? `http://localhost:4000/uploads/${educatorDetails.profilePic.filename}`
+            ? `${baseUrl}uploads/${educatorDetails.profilePic.filename}`
             : null);
         setEditOpen(true);
-    }
+    };
+
     const handleEditClose = () => setEditOpen(false);
 
     const handlePersonalEditOpen = () => {
+        if (!educatorDetails) return;
+        
         setPersonalData({
             educationalQualification: educatorDetails.educationalQualification || "",
             yearsOfExperience: educatorDetails.yearsOfExperience || "",
@@ -368,22 +349,28 @@ const EducatorProfile = () => {
             certification: null,
         });
         setCertificationPreview(educatorDetails?.certification?.filename
-            ? `http://localhost:4000/uploads/${educatorDetails.certification.filename}`
+            ? `${baseUrl}uploads/${educatorDetails.certification.filename}`
             : null);
         setPersonalEditOpen(true);
-    }
+    };
+
     const handlePersonalEditClose = () => setPersonalEditOpen(false);
 
     const handleLogOut = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('educatorDetails');
         navigate('/educator/login');
-        toast.success("you logged out");
+        toast.success("You have been logged out");
+    };
+
+    if (!educatorDetails) {
+        return <div>Loading...</div>;
     }
 
     return (
         <>
-<EducatorNavbar profilebg={profilebg} educatorDetails={educatorDetails} />
+            <EducatorNavbar profilebg={profilebg} educatorDetails={educatorDetails} />
+            
             {/* Logout Modal */}
             <div>
                 <Modal
@@ -407,10 +394,10 @@ const EducatorProfile = () => {
                             </Box>
                             <hr />
                             <Box display={"flex"} alignItems={"center"} justifyContent={"center"} flexDirection={"column"}>
-                                <Typography color='primary' sx={{ fontSize: "12px", fontWeight: '500' }} variant='p'>Are you sure you want to log out ? </Typography>
+                                <Typography color='primary' sx={{ fontSize: "12px", fontWeight: '500' }} variant='p'>Are you sure you want to log out?</Typography>
                                 <Box display={"flex"} alignItems={"center"} justifyContent={"center"} sx={{ gap: "10px" }}>
-                                    <Button variant='outlined' color='secondary' sx={{ borderRadius: "25px", marginTop: "20px", height: "40px", width: '100px', padding: '10px 35px' }} onClick={handleLogOut}>yes</Button>
-                                    <Button variant='contained' color='secondary' sx={{ borderRadius: "25px", marginTop: "20px", height: "40px", width: '100px', padding: '10px 35px' }} onClick={handleClose}>no</Button>
+                                    <Button variant='outlined' color='secondary' sx={{ borderRadius: "25px", marginTop: "20px", height: "40px", width: '100px', padding: '10px 35px' }} onClick={handleLogOut}>Yes</Button>
+                                    <Button variant='contained' color='secondary' sx={{ borderRadius: "25px", marginTop: "20px", height: "40px", width: '100px', padding: '10px 35px' }} onClick={handleClose}>No</Button>
                                 </Box>
                             </Box>
                         </Box>
@@ -548,9 +535,10 @@ const EducatorProfile = () => {
                                                 value={personalData.educationalQualification}
                                             >
                                                 <option value="">Select</option>
-                                                <option value="literature">Literature</option>
-                                                <option value="Science">Science</option>
-                                                <option value="Maths">Maths</option>
+                                                <option value="Bachelor's in Education">Bachelor's in Education</option>
+                                                <option value="Master's in Education">Master's in Education</option>
+                                                <option value="PhD in Education">PhD in Education</option>
+                                                <option value="Diploma in Education">Diploma in Education</option>
                                             </select>
                                             {personalError.educationalQualification && <span style={{ color: 'red', fontSize: '12px' }}>{personalError.educationalQualification}</span>}
                                         </div>
@@ -577,10 +565,12 @@ const EducatorProfile = () => {
                                                 value={personalData.languages}
                                             >
                                                 <option value="">Select</option>
-                                                <option value="Tamil">Tamil</option>
                                                 <option value="English">English</option>
+                                                <option value="Tamil">Tamil</option>
                                                 <option value="Hindi">Hindi</option>
                                                 <option value="Telugu">Telugu</option>
+                                                <option value="English, Tamil">English, Tamil</option>
+                                                <option value="English, Hindi">English, Hindi</option>
                                             </select>
                                             {personalError.languages && <span style={{ color: 'red', fontSize: '12px' }}>{personalError.languages}</span>}
                                         </div>
@@ -651,12 +641,18 @@ const EducatorProfile = () => {
                 <Box display={"flex"} justifyContent={"center"} alignItems={"center"} sx={{ height: "46px", background: "#DBE8FA" }}>
                     <Typography color='primary' textAlign={"center"} sx={{ fontSize: "18px", fontWeight: "600" }}>Profile</Typography>
                 </Box>
-                {!educatorDetails.languages && <Link to='/educator/personalinfo' >
-                    <Button variant="contained" color='secondary' sx={{
-                        borderRadius: "15px", mt
-                            : "10px", p: "10px 20px", width: "100%"
-                    }}>Add personal details</Button>
-                </Link>}
+                {!educatorDetails.languages && (
+                    <Link to='/educator/personalinfo'>
+                        <Button variant="contained" color='secondary' sx={{
+                            borderRadius: "15px", 
+                            mt: "10px", 
+                            p: "10px 20px", 
+                            width: "100%"
+                        }}>
+                            Add personal details
+                        </Button>
+                    </Link>
+                )}
                 <Box display={"flex"} justifyContent={"start"} alignItems={"start"} flexDirection={"column"} sx={{ mt: "20px", ml: "50px", mr: "50px", height: '320px' }}>
                     <Breadcrumbs aria-label="breadcrumb" separator="›">
                         <Link style={{ fontSize: "12px", fontWeight: "500", color: "#7F7F7F", textDecoration: "none" }} underline="hover" to="/educator/home">
@@ -667,34 +663,31 @@ const EducatorProfile = () => {
 
                     <Box display={"flex"} justifyContent={"space-between"} alignItems={"center"} sx={{ height: "260px", background: '#F6F7F9', borderRadius: "20px", width: "100%", padding: "0px 60px" }}>
                         <Box display={"flex"} justifyContent={"center"} alignItems={"center"} sx={{ height: "180px", gap: "70px" }}>
-                            {
-                                educatorDetails.profilePic?.filename ? (
-                                    <Avatar sx={{ height: "100%", width: "180px" }}
-                                        src={`http://localhost:4000/uploads/${educatorDetails?.profilePic?.filename}`} alt={educatorDetails?.name}
-                                    />
-                                ) :
-                                    (
-                                        <Avatar sx={{ height: "100%", width: "180px" }}>
-                                            {educatorDetails?.name?.charAt(0)}
-                                        </Avatar>
-                                    )
-                            }
+                            {educatorDetails.profilePic?.filename ? (
+                                <Avatar sx={{ height: "100%", width: "180px" }}
+                                    src={`${baseUrl}uploads/${educatorDetails.profilePic.filename}`} 
+                                    alt={educatorDetails.name}
+                                />
+                            ) : (
+                                <Avatar sx={{ height: "100%", width: "180px" }}>
+                                    {educatorDetails.name?.charAt(0)}
+                                </Avatar>
+                            )}
                             <Box display={"flex"} justifyContent={"center"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "40px" }} >
-                                {educatorDetails.name && <Typography color='primary' sx={{ fontSize: "32px", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "20px" }} onClick={handleEditOpen}>{educatorDetails.name}
-                                    <BorderColorOutlinedIcon />
-                                </Typography>}
+                                {educatorDetails.name && (
+                                    <Typography color='primary' sx={{ fontSize: "32px", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "20px" }} onClick={handleEditOpen}>
+                                        {educatorDetails.name}
+                                        <BorderColorOutlinedIcon />
+                                    </Typography>
+                                )}
                                 <Box display={"flex"} justifyContent={"center"} alignItems={"center"} sx={{ gap: "100px" }}>
                                     <Box display={"flex"} justifyContent={"start"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "20px" }}>
-
                                         {educatorDetails.name && <Typography> <PersonOutlinedIcon /> {educatorDetails.name}</Typography>}
                                         {educatorDetails.email && <Typography> <MailOutlinedIcon /> {educatorDetails.email}</Typography>}
                                     </Box>
-                                    <Box display={"flex"} justifyContent={"start"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "20px", borderLeft: "1px solid #CCCCCC", ml: "50px", pl: "40px" }} >
-
+                                    <Box display={"flex"} justifyContent={"start"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "20px", borderLeft: "1px solid #CCCCCC", ml: "50px", pl: "40px" }}>
                                         {educatorDetails.address && <Typography> <LocationOnOutlinedIcon /> {educatorDetails.address}</Typography>}
-                                        {
-                                            educatorDetails.phone && <Typography> <PhoneEnabledOutlinedIcon /> {educatorDetails.phone}</Typography>
-                                        }
+                                        {educatorDetails.phone && <Typography> <PhoneEnabledOutlinedIcon /> {educatorDetails.phone}</Typography>}
                                     </Box>
                                 </Box>
                             </Box>
@@ -704,57 +697,57 @@ const EducatorProfile = () => {
                         </Box>
                     </Box>
 
-                    {/* Personal Info Section - Updated with dummy data fallback */}
-            <Box display={"flex"} justifyContent={"space-between"} alignItems={"start"} sx={{ height: "323px", background: '#F6F7F9', borderRadius: "20px", width: "100%", padding: "20px 60px", mt: "50px", flexDirection: "column" }}>
-                <Box display={"flex"} justifyContent={"center"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "30px" }} >
-                    <Box>
-                        <Typography color='primary' sx={{ fontSize: "24px", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "20px" }} onClick={handlePersonalEditOpen}>
-                            Personal Info
-                            <BorderColorOutlinedIcon />
-                        </Typography>
-                    </Box>
-                    <Box sx={{ gap: "400px" }} width={"100%"} display={"flex"} justifyContent={"space-between"} alignItems={"start"}>
-                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"} gap={3}>
-                            <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Educational Qualifications</Typography>
-                                <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
-                                    {educatorDetails.educationalQualification || "Bachelor's in Education"}
+                    {/* Personal Info Section */}
+                    <Box display={"flex"} justifyContent={"space-between"} alignItems={"start"} sx={{ height: "323px", background: '#F6F7F9', borderRadius: "20px", width: "100%", padding: "20px 60px", mt: "50px", flexDirection: "column" }}>
+                        <Box display={"flex"} justifyContent={"center"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "30px" }}>
+                            <Box>
+                                <Typography color='primary' sx={{ fontSize: "24px", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "20px" }} onClick={handlePersonalEditOpen}>
+                                    Personal Info
+                                    <BorderColorOutlinedIcon />
                                 </Typography>
                             </Box>
-                            <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Language</Typography>
-                                <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
-                                    {educatorDetails.languages || "English, Tamil"}
-                                </Typography>
-                            </Box>
-                            <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Certification</Typography>
-                                <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
-                                    {educatorDetails.certification ? "Adobe Certified Professional" : "TESOL Certified"}
-                                </Typography>
+                            <Box sx={{ gap: "400px" }} width={"100%"} display={"flex"} justifyContent={"space-between"} alignItems={"start"}>
+                                <Box display={"flex"} flexDirection={"column"} alignItems={"start"} gap={3}>
+                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                        <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Educational Qualifications</Typography>
+                                        <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
+                                            {educatorDetails.educationalQualification || "Not specified"}
+                                        </Typography>
+                                    </Box>
+                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                        <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Language</Typography>
+                                        <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
+                                            {educatorDetails.languages || "Not specified"}
+                                        </Typography>
+                                    </Box>
+                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                        <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Certification</Typography>
+                                        <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
+                                            {educatorDetails.certification ? "Certified" : "Not specified"}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                                <Box display={"flex"} flexDirection={"column"} alignItems={"start"} gap={3} sx={{ borderLeft: "1px solid black", pl: 5 }}>
+                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                        <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Years of Experience</Typography>
+                                        <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
+                                            {educatorDetails.yearsOfExperience || "Not specified"}
+                                        </Typography>
+                                    </Box>
+                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                        <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Availability</Typography>
+                                        <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
+                                            {educatorDetails.availability || "Not specified"}
+                                        </Typography>
+                                    </Box>
+                                </Box>
                             </Box>
                         </Box>
-                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"} gap={3} sx={{ borderLeft: "1px solid black" }}>
-                            <Box display={"flex"} flexDirection={"column"} alignItems={"start"} ml={5}>
-                                <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Years of Experience</Typography>
-                                <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
-                                    {educatorDetails.yearsOfExperience || "5"}
-                                </Typography>
-                            </Box>
-                            <Box display={"flex"} flexDirection={"column"} alignItems={"start"} ml={5}>
-                                <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Availability</Typography>
-                                <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
-                                    {educatorDetails.availability || "Full time"}
-                                </Typography>
-                            </Box>
-                        </Box>
                     </Box>
-                </Box>
-            </Box>
                 </Box>
             </Box>
         </>
     )
 }
 
-export default EducatorProfile
+export default EducatorProfile;

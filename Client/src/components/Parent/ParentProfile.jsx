@@ -16,6 +16,7 @@ import axios from 'axios';
 import background from "../../assets/Frame 12.png";
 import profileFrame from "../../assets/profileFrame.png";
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import { baseUrl } from '../../baseUrl';
 
 const ParentProfile = () => {
     const profilebg = {
@@ -165,7 +166,7 @@ const ParentProfile = () => {
 
         console.log(data);
         const token = localStorage.getItem("token");
-        const updated = await axios.post(`http://localhost:4000/ldss/parent/updateparent/${parentDetails._id}`, formData, {
+        const updated = await axios.post(`${baseUrl}parent/updateparent/${parentDetails._id}`, formData, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
@@ -187,7 +188,7 @@ const ParentProfile = () => {
 
             const token = localStorage.getItem("token");
     const parentDetails = JSON.parse(localStorage.getItem("parentdetails"));
-    const res = await axios.get(`http://localhost:4000/ldss/parent/getparent/${parentDetails._id}`, {
+    const res = await axios.get(`${baseUrl}parent/getparent/${parentDetails._id}`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -223,7 +224,7 @@ const ParentProfile = () => {
             profilePic: null, // leave this null so user can choose a new one
         });
         setImagePreview(parentDetails?.profilePic?.filename 
-            ? `http://localhost:4000/uploads/${parentDetails?.profilePic?.filename}` 
+            ? `${baseUrl}uploads/${parentDetails?.profilePic?.filename}` 
             : null);
         setEditOpen(true);
     }
@@ -413,7 +414,7 @@ const ParentProfile = () => {
                             {
                                 parentDetails.profilePic?.filename ? (
                                     <Avatar sx={{ height: "100%", width: "180px" }}
-                                        src={`http://localhost:4000/uploads/${parentDetails?.profilePic?.filename}`} alt={parentDetails?.name}
+                                        src={`${baseUrl}uploads/${parentDetails?.profilePic?.filename}`} alt={parentDetails?.name}
                                     />
                                 ) :
                                     (

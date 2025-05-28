@@ -6,6 +6,7 @@ import Footer from '../Footer/Footer';
 import axios from "axios";
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { baseUrl } from '../../baseUrl';
 
 const ParentForgotPassword = () => {
     const textFieldStyle = { height: "65px", width: "360px", display: "flex", flexDirection: "column", justifyContent: "start", position: "relative" };
@@ -36,7 +37,7 @@ const navigate=useNavigate();
             return;
         }
 
-        const response = await axios.post("http://localhost:4000/ldss/parent/forgotpassword", { email });
+        const response = await axios.post(`${baseUrl}parent/forgotpassword`, { email });
         console.log(response.data);
         setEmail("");
         if(response.data.message===" No Parent found with this email."){

@@ -9,6 +9,7 @@ import UploadIcon from '@mui/icons-material/Upload';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { baseUrl } from '../../baseUrl';
 
 const EducatorPersonal = () => {
     const StyledTextField = styled(TextField)({
@@ -127,7 +128,7 @@ const navigate=useNavigate();
         const educatorId = JSON.parse(educatorDetails)._id;
         const token = localStorage.getItem("token")
 
-        const addEducatorInfo = await axios.post(`http://localhost:4000/ldss/educator/addpersonal/${educatorId}`, formData, {
+        const addEducatorInfo = await axios.post(`${baseUrl}educator/addpersonal/${educatorId}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
                 Authorization: `Bearer ${token}`,
