@@ -1,34 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import TheraphistNavbar from '../Navbar/TheraphistNavbar';
-import "../../Styles/LandingPage.css";
-import { Box, Button, Container, Divider, Fade, Grid, Modal, Stack, Typography, Card, CardContent, CardMedia, Breadcrumbs } from '@mui/material';
-import StarIcon from '@mui/icons-material/Star';
-import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
-import background from "../../assets/Frame 12@2x.png";
-import image68 from "../../assets/image 68.png";
-import image69 from "../../assets/image 69.png";
-import image70 from "../../assets/image 70.png";
-import image71 from "../../assets/image 71.png";
-import verified from "../../assets/verified.png";
-import VerifiedIcon from '@mui/icons-material/Verified';
-import AVATAR1 from "../../assets/AVATAR1.png";
-import AVATAR2 from "../../assets/AVATAR2.png";
-import AVATAR3 from "../../assets/AVATAR3.png";
-import AVATAR4 from "../../assets/AVATAR4.png";
-import user from "../../assets/user.png";
-import shopping from "../../assets/Shopping list.png";
-import elearning from "../../assets/Elearning.png";
-import keyFeatures1 from "../../assets/image 74.png";
-import keyFeatures2 from "../../assets/image 73.png";
-import keyFeatures3 from "../../assets/image 75.png";
-import keyFeatures4 from "../../assets/image 72.png";
-import frame1 from "../../assets/Frame 48095593.png";
-import frame2 from "../../assets/Frame 48095594.png";
-import Footer from '../Footer/Footer';
-import { jwtDecode } from 'jwt-decode';
-import axios from "axios";
+import React, { useEffect, useState } from 'react'
+import ParentNavbar from '../Navbar/ParentNavbar'
 import { Link, useNavigate } from 'react-router-dom';
+import { Box, Breadcrumbs, Button, Grid, Typography, Container, Stack } from '@mui/material';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import BorderColorOutlinedIcon from '@mui/icons-material/BorderColorOutlined';
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
+import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined';
+import FemaleIcon from '@mui/icons-material/Female';
+import DateRangeIcon from '@mui/icons-material/DateRange';
 import Backdrop from '@mui/material/Backdrop';
 import TherapistViewParentDetails from './Common/TherapistViewParentDetails';
 
@@ -175,79 +156,36 @@ const TheraphistHome = () => {
                                 Welcome to learn hub
                             </Typography>
                         </Box>
-                        <Box>
-                            <Typography variant="h1" component="h1" color='primary'
-                                sx={{ fontSize: "56px", fontWeight: 600, marginTop: 2, margin: "10px 0px" }}
-                            >
-                                Empowering Every
-                            </Typography>
-                            <Typography variant="h1" component="h1" color='secondary'
-                                sx={{ fontSize: "56px", fontWeight: 600, marginTop: 2, margin: "10px 0px" }}
-                            >
-                                Child's Learning
-                            </Typography>
-                            <Typography variant="h1" component="h1" color='primary'
-                                sx={{ fontSize: "56px", fontWeight: 600, marginTop: 2, margin: "10px 0px" }}
-                            >
-                                Journey
-                            </Typography>
-                            <Typography variant="p" component="p" color='primary'
-                                sx={{ fontSize: "14px", fontWeight: 500, lineHeight: "25px", marginTop: 2, margin: "10px 0px", textAlign: "justify", marginRight: "250px" }}
-                            >
-                                A one-stop platform connecting parents, educators, and therapists to support children with learning disabilities through personalized learning plans, activity tracking, and seamless collaboration.
-                            </Typography>
+                      </Box>
+                      <Box display={"flex"} alignItems={"center"} sx={{ gap: "15px" }}>
+                        <Box sx={{ color: "#1967D2" }}><ApartmentOutlinedIcon /></Box>
+                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                          <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>School name</Typography>
+                          <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.schoolName}</Typography>
                         </Box>
+                      </Box>
                     </Box>
-                    <Box sx={{ flex: 1 }}>
-                        <Grid container spacing={1}
-                            sx={{ width: "615px", height: "510px", position: "relative" }}
-                        >
-                            <Box sx={{ width: "264px", height: "62px", backgroundColor: 'white', borderRadius: "5px", boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", padding: "5px 3px", position: 'absolute', top: "30px", left: "-35px" }} >
-                                <Typography variant='p' color="primary" sx={{ fontSize: "14px" }}>
-                                    <VerifiedIcon color='secondary' />
-                                    Thousands of Verified educators & therapist!
-                                </Typography>
-                            </Box>
-                            <Box sx={{ width: "195px", height: "118px", backgroundColor: '#DBE8FA', borderRadius: "5px", padding: "5px 3px", position: 'absolute', bottom: "-85px", right: "-35px", display: "flex", alignItems: "center", justifyContent: "center" }} >
-                                <Box sx={{ width: "165px", height: "88px", backgroundColor: 'white', borderRadius: "5px", padding: "5px 3px", display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}>
-                                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                        <Box component="img" src={AVATAR1} alt='avatar' sx={{ width: "41px", height: "39px" }}></Box>
-                                        <Box component="img" src={AVATAR2} alt='avatar' sx={{ width: "41px", height: "39px", marginLeft: "-20px" }}></Box>
-                                        <Box component="img" src={AVATAR3} alt='avatar' sx={{ width: "41px", height: "39px", marginLeft: "-20px" }}></Box>
-                                        <Box component="img" src={AVATAR4} alt='avatar' sx={{ width: "41px", height: "39px", marginLeft: "-20px" }}></Box>
-                                    </Box>
-                                    <Typography>
-                                        200k+ Learning
-                                    </Typography>
-                                </Box>
-                            </Box>
-                            <Grid size={9}>
-                                <Box component="img" src={image68} alt='img'
-                                    sx={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }} />
-                            </Grid>
-                            <Grid size={3}>
-                                <Box component="img" src={image69} alt='img'
-                                    sx={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }} />
-                            </Grid>
-                            <Grid size={5}>
-                                <Box component="img" src={image70} alt='img'
-                                    sx={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }} />
-                            </Grid>
-                            <Grid size={7}>
-                                <Box component="img" src={image71} alt='img'
-                                    sx={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }} />
-                            </Grid>
-                        </Grid>
+                    <Box sx={{ gap: "20px", pr: "250px", borderLeft: "1px solid #CCCCCC" }} display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                      <Box display={"flex"} alignItems={"center"} sx={{ gap: "15px", pl: "50px" }}>
+                        <Box sx={{ color: "#1967D2" }}><DateRangeIcon /></Box>
+                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                          <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Date of birth</Typography>
+                          <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.dateOfBirth}</Typography>
+                        </Box>
+                      </Box>
+                      <Box display={"flex"} alignItems={"center"} sx={{ gap: "15px", pl: "50px" }}>
+                        <Box sx={{ color: "#1967D2" }}><FemaleIcon /></Box>
+                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                          <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Gender</Typography>
+                          <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.gender}</Typography>
+                        </Box>
+                      </Box>
                     </Box>
-                </Stack>
-            </Container>
-
-            {/* Parent Requests Section */}
-            <Container maxWidth="x-lg" sx={{ background: "#F0F6FE", py: 6 }}>
-                <Box display="flex" flexDirection="column" alignItems="center" sx={{ mb: 4 }}>
-                    <Typography variant='h4' color='primary' sx={{ fontSize: "32px", fontWeight: "600" }}>
-                        Parent's Requests
-                    </Typography>
+                  </Box>
+                  <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                    <Typography variant='h5' sx={{ fontSize: "18px", fontWeight: "500" }} color='secondary'>Description</Typography>
+                    <Typography variant='p' sx={{ fontSize: "14px", fontWeight: "500" }} color='primary'>{child.description}</Typography>
+                  </Box>
                 </Box>
                 
                 <Box sx={{ 
@@ -386,60 +324,105 @@ const TheraphistHome = () => {
                             ))) 
                         }
                     </Box>
-                    <Box 
-                        display="flex" 
-                        justifyContent="flex-end" 
-                        sx={{ 
-                            mr: { xs: 2, md: "150px" },
-                            pt: 3.75
-                        }}
-                    >
-                        <Link 
-                            to="/therapist/parentsrequest" 
-                            style={{
-                                textDecoration: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                color: "inherit"
-                            }}
-                        >
-                            <Typography sx={{ fontWeight: 500 }}>
-                                View More
-                            </Typography>
-                            <ArrowRightAltIcon sx={{ ml: 0.5 }} />
-                        </Link>
-                    </Box>
+                  </Box>
+                  <Box display={'flex'} alignItems={'center'} justifyContent={'center'} flexDirection={'column'} sx={{ width: '253px', height: "93px", gap: '10px', mt: "70px" }}>
+                    <Button 
+                      variant='contained' 
+                      color='secondary' 
+                      sx={{ borderRadius: "25px", marginTop: "20px", height: "40px", width: '200px', padding: '10px 35px' }}
+                      onClick={handleSubmit}
+                      disabled={!childData.name || !childData.schoolName || !childData.dateOfBirth || !childData.gender}
+                    >Confirm</Button>
+                  </Box>
                 </Box>
-            </Container>
+              </Container>
+            </Box>
+          </Fade>
+        </Modal>
+      </div>
+      {/* add child modal ends */}
 
-            {/* How It Works Section */}
-            <Container maxWidth="x-lg" sx={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column", my: 8 }}>
-                <Stack spacing={2} sx={{ width: "305px", height: "88px", display: "flex", justifyContent: "center", alignItems: "center", gap: "10px" }}>
-                    <Box>
-                        <Typography color='primary' variant='h3' sx={{ fontSize: "32px", fontWeight: "600" }}>
-                            How it Works
-                        </Typography>
-                    </Box>
-                    <Box>
-                        <Typography color='primary' variant='p' sx={{ fontSize: "14px", fontWeight: "500" }}>
-                            Find the perfect learning in just a few steps
-                        </Typography>
-                    </Box>
-                </Stack>
-
-                <Stack direction="row" spacing={2} sx={{ height: "210px", display: "flex", alignItems: 'center', gap: "20px", mt: 8 }}>
-                    <Box sx={{ width: "400px", display: "flex", flexDirection: "column", alignItems: 'center', gap: "20px" }}>
-                        <Box component="img" src={user} />
-                        <Box>
-                            <Typography variant='h4' color='"primary' sx={{ fontSize: "18px", fontWeight: "600" }}>
-                                Build Profiles
-                            </Typography>
-                        </Box>
-                        <Box>
-                            <Typography variant='p' color='primary' sx={{ fontSize: "14px", fontWeight: "500", textAlign: 'justify' }}>
-                                Parents add child details; educators & therapists set expertise.
-                            </Typography>
-                        </Box>
+      {/* edit child modal start */}
+      <div>
+        <Modal
+          aria-labelledby="transition-modal-title"
+          aria-describedby="transition-modal-description"
+          open={editChildOpen}
+          onClose={handleEditChildClose}
+          closeAfterTransition
+          slots={{ backdrop: Backdrop }}
+          slotProps={{
+            backdrop: {
+              timeout: 500,
+            },
+          }}
+        >
+          <Fade in={editChildOpen}>
+            <Box sx={editChildStyle}>
+              <Box display={"flex"} justifyContent={"space-between"} alignItems={"space-between"}>
+                <Typography variant='h4' sx={{ fontSize: "18px", fontWeight: "600" }}>Edit Child</Typography>
+                <CloseIcon onClick={handleEditChildClose} sx={{ fontSize: "18px", cursor: "pointer" }} />
+              </Box>
+              <hr />
+              <Container sx={{ position: "relative", mt: "50px" }} maxWidth="x-lg">
+                <Box display={'flex'} alignItems={'center'} justifyContent={'center'} flexDirection={'column'}>
+                  <Box sx={{ display: "flex", justifyContent: 'center', alignItems: "start", gap: "30px", height: "154px", flexDirection: "column", marginTop: '30px' }}>
+                    <Stack direction="row" sx={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                      <div style={textFieldStyle}>
+                        <label>Name</label>
+                        <input 
+                          style={{ height: "40px", borderRadius: "8px", border: " 1px solid #CCCCCC", padding: '8px' }}
+                          name='name'
+                          type='text'
+                          value={editchild.name}
+                          onChange={handleEditChange}
+                          required
+                        />
+                      </div>
+                      <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginTop: '20px', textFieldStyle }}>
+                        <label style={{}}>Gender:</label>
+                        <label>
+                          <input type="radio" name="gender" value="male" onChange={handleEditChange} checked={editchild.gender === "male"} /> Male
+                        </label>
+                        <label>
+                          <input type="radio" name="gender" value="female" onChange={handleEditChange} checked={editchild.gender === "female"} /> Female
+                        </label>
+                        <label>
+                          <input type="radio" name="gender" value="others" onChange={handleEditChange} checked={editchild.gender === "others"} /> Others
+                        </label>
+                      </div>
+                    </Stack>
+                    <Stack direction={'row'} sx={{ display: "flex", gap: "15px" }}>
+                      <div style={textFieldStyle}>
+                        <label>School Name</label>
+                        <input 
+                          style={{ height: "40px", borderRadius: "8px", border: " 1px solid #CCCCCC", padding: '8px' }}
+                          name='schoolName'
+                          onChange={handleEditChange}
+                          value={editchild.schoolName}
+                          required
+                        />
+                      </div>
+                      <div style={textFieldStyle}>
+                        <label>Date Of Birth</label>
+                        <input 
+                          style={{ height: "40px", borderRadius: "8px", border: " 1px solid #CCCCCC", padding: '8px' }}
+                          name='dateOfBirth'
+                          type='date'
+                          onChange={handleEditChange}
+                          value={editchild.dateOfBirth}
+                          required
+                        />
+                      </div>
+                    </Stack>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: "15px", width: "100%" }}>
+                      <label>Description</label>
+                      <textarea 
+                        style={{ height: "70px", borderRadius: "8px", border: " 1px solid #CCCCCC", padding: '8px' }}
+                        name='description'
+                        onChange={handleEditChange}
+                        value={editchild.description}
+                      />
                     </Box>
                     <Box sx={{ width: "400px", display: "flex", flexDirection: "column", alignItems: 'center', gap: "20px" }}>
                         <Box component="img" src={elearning} />

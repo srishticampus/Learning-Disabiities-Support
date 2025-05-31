@@ -13,7 +13,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use("/ldss", router);
+app.use("/", router);
 app.use('/uploads', express.static('uploads'));
 
 // In your Express backend
