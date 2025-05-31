@@ -1,5 +1,4 @@
 
-import React, { useEffect, useState } from 'react';
 import { 
   Box, 
   Button, 
@@ -10,9 +9,6 @@ import {
   styled 
 } from '@mui/material';
 import React, { useEffect, useState } from 'react'
-import EducatorNavbar from '../Navbar/EducatorNavbar';
-import contactbg from "../../assets/Vector 10.png"
-import { Box, Button, Container, Stack, TextField, Typography, styled } from '@mui/material';
 
 import PhoneIcon from '@mui/icons-material/Phone';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
