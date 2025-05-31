@@ -1,28 +1,58 @@
-import React, { useEffect, useState } from 'react'
-import ParentNavbar from '../Navbar/ParentNavbar'
-import { Link, useNavigate } from 'react-router-dom';
-import { Box, Breadcrumbs, Button, Grid, Typography, Container, Stack } from '@mui/material';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
-import BorderColorOutlinedIcon from '@mui/icons-material/BorderColorOutlined';
-import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Box, Typography, Container, Stack, Card, CardMedia, Modal, Fade, Button } from '@mui/material';
+import StarIcon from '@mui/icons-material/Star';
 import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined';
-import FemaleIcon from '@mui/icons-material/Female';
 import DateRangeIcon from '@mui/icons-material/DateRange';
+import FemaleIcon from '@mui/icons-material/Female';
 import Backdrop from '@mui/material/Backdrop';
+import CloseIcon from '@mui/icons-material/Close';
+import TheraphistNavbar from '../Navbar/TheraphistNavbar';
+import Footer from '../Footer/Footer';
+import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 import TherapistViewParentDetails from './Common/TherapistViewParentDetails';
 
 const TheraphistHome = () => {
-    const homebg = {
-        backgroundColor: "#F6F7F9"
-    };
-
     const [therapistDetails, setTherapistDetails] = useState({});
     const [parentRequest, setParentRequest] = useState([]);
     const [requestDetail, setRequestDetail] = useState(null);
     const [openParent, setOpenParent] = useState(false);
+    const [editChildOpen, setEditChildOpen] = useState(false);
+    const [editchild, setEditChild] = useState({ 
+        name: '', 
+        schoolName: '', 
+        dateOfBirth: '', 
+        gender: '', 
+        description: '' 
+    });
+    const [selectedChild, setSelectedChild] = useState(null);
     const navigate = useNavigate();
+
+    // Style definitions
+    const homebg = {
+        backgroundColor: '#F6F7F9',
+        minHeight: '100vh',
+    };
+
+    const editChildStyle = {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 600,
+        bgcolor: 'background.paper',
+        boxShadow: 24,
+        p: 4,
+        borderRadius: '20px',
+    };
+
+    const textFieldStyle = {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '5px',
+        width: '100%'
+    };
 
     const fetchTherapist = async () => {
         try {
@@ -68,6 +98,7 @@ const TheraphistHome = () => {
             );
             if (response.data?.viewRequest) {
                 setRequestDetail(response.data.viewRequest);
+                setSelectedChild(response.data.viewRequest.childId); // Set the selected child
                 setOpenParent(true);
             }
         } catch (error) {
@@ -108,6 +139,31 @@ const TheraphistHome = () => {
     const handleParentClose = () => {
         setOpenParent(false);
         setRequestDetail(null);
+        setSelectedChild(null);
+    };
+
+    const handleSubmit = () => {
+        // Implement your submit logic here
+        alert('Child information updated');
+        setEditChildOpen(false);
+    };
+
+    const handleEditChildClose = () => {
+        setEditChildOpen(false);
+    };
+
+    const handleEditChange = (e) => {
+        const { name, value } = e.target;
+        setEditChild(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleEditChild = (child) => {
+        setEditChild(child);
+        setEditChildOpen(true);
+    };
+
+    const navigateToProfile = () => {
+        navigate('/therapist/profile');
     };
 
     useEffect(() => {
@@ -120,19 +176,13 @@ const TheraphistHome = () => {
         }
     }, [therapistDetails]);
 
-    const navigateToProfile = () => {
-        navigate('/therapist/profile');
-    };
-
     return (
         <>
             <TheraphistNavbar
                 theraphistdetails={therapistDetails}
                 navigateToProfile={navigateToProfile}
             />
-            <Container maxWidth="x-lg" sx={{ ...homebg, height: '100vh', position: "relative", overflow: "hidden", zIndex: 2 }}>                <Box component="img" src={background} alt='background'
-                    sx={{ position: "absolute", top: "0", left: "0", width: "100%", height: "100%", objectFit: 'cover', zIndex: -1 }}
-                />
+            <Container maxWidth="x-lg" sx={{ ...homebg, height: '100vh', position: "relative", overflow: "hidden", zIndex: 2 }}>
                 <Stack direction="row" spacing={2} sx={{ padding: "80px 50px", zIndex: 1 }}>
                     <Box sx={{ flex: 1, display: 'flex', flexDirection: "column", alignItems: "flex-start", justifyContent: "center" }}>
                         <Box sx={{
@@ -156,38 +206,60 @@ const TheraphistHome = () => {
                                 Welcome to learn hub
                             </Typography>
                         </Box>
-                      </Box>
-                      <Box display={"flex"} alignItems={"center"} sx={{ gap: "15px" }}>
-                        <Box sx={{ color: "#1967D2" }}><ApartmentOutlinedIcon /></Box>
-                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                          <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>School name</Typography>
-                          <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.schoolName}</Typography>
-                        </Box>
-                      </Box>
                     </Box>
-                    <Box sx={{ gap: "20px", pr: "250px", borderLeft: "1px solid #CCCCCC" }} display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                      <Box display={"flex"} alignItems={"center"} sx={{ gap: "15px", pl: "50px" }}>
-                        <Box sx={{ color: "#1967D2" }}><DateRangeIcon /></Box>
-                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                          <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Date of birth</Typography>
-                          <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.dateOfBirth}</Typography>
+                </Stack>
+
+                {/* Child Information Section - Only shown when a child is selected */}
+                {selectedChild && (
+                    <Box sx={{ p: 3, mb: 4, backgroundColor: 'white', borderRadius: '16px', boxShadow: 1 }}>
+                        <Typography variant="h6" sx={{ mb: 2 }}>Child Information</Typography>
+                        <Box display="flex" justifyContent="space-between">
+                            <Box display="flex" alignItems="center" sx={{ gap: "15px" }}>
+                                <Box sx={{ color: "#1967D2" }}><PersonOutlinedIcon /></Box>
+                                <Box display="flex" flexDirection="column" alignItems="start">
+                                    <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Name</Typography>
+                                    <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{selectedChild.name}</Typography>
+                                </Box>
+                            </Box>
+                            <Box display="flex" alignItems="center" sx={{ gap: "15px" }}>
+                                <Box sx={{ color: "#1967D2" }}><ApartmentOutlinedIcon /></Box>
+                                <Box display="flex" flexDirection="column" alignItems="start">
+                                    <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>School name</Typography>
+                                    <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{selectedChild.schoolName}</Typography>
+                                </Box>
+                            </Box>
+                            <Box display="flex" alignItems="center" sx={{ gap: "15px" }}>
+                                <Box sx={{ color: "#1967D2" }}><DateRangeIcon /></Box>
+                                <Box display="flex" flexDirection="column" alignItems="start">
+                                    <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Date of birth</Typography>
+                                    <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>
+                                        {new Date(selectedChild.dateOfBirth).toLocaleDateString()}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <Box display="flex" alignItems="center" sx={{ gap: "15px" }}>
+                                <Box sx={{ color: "#1967D2" }}><FemaleIcon /></Box>
+                                <Box display="flex" flexDirection="column" alignItems="start">
+                                    <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Gender</Typography>
+                                    <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{selectedChild.gender}</Typography>
+                                </Box>
+                            </Box>
+                            <Button 
+                                variant="outlined" 
+                                onClick={() => handleEditChild(selectedChild)}
+                                startIcon={<BorderColorOutlinedIcon />}
+                            >
+                                Edit
+                            </Button>
                         </Box>
-                      </Box>
-                      <Box display={"flex"} alignItems={"center"} sx={{ gap: "15px", pl: "50px" }}>
-                        <Box sx={{ color: "#1967D2" }}><FemaleIcon /></Box>
-                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                          <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Gender</Typography>
-                          <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.gender}</Typography>
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="subtitle1">Description:</Typography>
+                            <Typography>{selectedChild.description}</Typography>
                         </Box>
-                      </Box>
                     </Box>
-                  </Box>
-                  <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                    <Typography variant='h5' sx={{ fontSize: "18px", fontWeight: "500" }} color='secondary'>Description</Typography>
-                    <Typography variant='p' sx={{ fontSize: "14px", fontWeight: "500" }} color='primary'>{child.description}</Typography>
-                  </Box>
-                </Box>
-                
+                )}
+
+                {/* Parent Requests Section */}
                 <Box sx={{ 
                     width: "100%", 
                     py: 4,
@@ -235,8 +307,13 @@ const TheraphistHome = () => {
                                                     borderRadius: "10px", 
                                                     flexShrink: 0 
                                                 }}
-                                                image={`http://localhost:4000/uploads/${request.parentId.profilePic.filename}`}
+                                                image={request.parentId.profilePic?.filename 
+                                                    ? `http://localhost:4000/uploads/${request.parentId.profilePic.filename}`
+                                                    : '/default-profile.png'}
                                                 alt="Profile"
+                                                onError={(e) => {
+                                                    e.target.src = '/default-profile.png';
+                                                }}
                                             />
                                             <Box sx={{
                                                 height: "100%",
@@ -324,168 +401,164 @@ const TheraphistHome = () => {
                             ))) 
                         }
                     </Box>
-                  </Box>
-                  <Box display={'flex'} alignItems={'center'} justifyContent={'center'} flexDirection={'column'} sx={{ width: '253px', height: "93px", gap: '10px', mt: "70px" }}>
-                    <Button 
-                      variant='contained' 
-                      color='secondary' 
-                      sx={{ borderRadius: "25px", marginTop: "20px", height: "40px", width: '200px', padding: '10px 35px' }}
-                      onClick={handleSubmit}
-                      disabled={!childData.name || !childData.schoolName || !childData.dateOfBirth || !childData.gender}
-                    >Confirm</Button>
-                  </Box>
                 </Box>
-              </Container>
-            </Box>
-          </Fade>
-        </Modal>
-      </div>
-      {/* add child modal ends */}
 
-      {/* edit child modal start */}
-      <div>
-        <Modal
-          aria-labelledby="transition-modal-title"
-          aria-describedby="transition-modal-description"
-          open={editChildOpen}
-          onClose={handleEditChildClose}
-          closeAfterTransition
-          slots={{ backdrop: Backdrop }}
-          slotProps={{
-            backdrop: {
-              timeout: 500,
-            },
-          }}
-        >
-          <Fade in={editChildOpen}>
-            <Box sx={editChildStyle}>
-              <Box display={"flex"} justifyContent={"space-between"} alignItems={"space-between"}>
-                <Typography variant='h4' sx={{ fontSize: "18px", fontWeight: "600" }}>Edit Child</Typography>
-                <CloseIcon onClick={handleEditChildClose} sx={{ fontSize: "18px", cursor: "pointer" }} />
-              </Box>
-              <hr />
-              <Container sx={{ position: "relative", mt: "50px" }} maxWidth="x-lg">
-                <Box display={'flex'} alignItems={'center'} justifyContent={'center'} flexDirection={'column'}>
-                  <Box sx={{ display: "flex", justifyContent: 'center', alignItems: "start", gap: "30px", height: "154px", flexDirection: "column", marginTop: '30px' }}>
-                    <Stack direction="row" sx={{ display: "flex", gap: "15px", alignItems: "center" }}>
-                      <div style={textFieldStyle}>
-                        <label>Name</label>
-                        <input 
-                          style={{ height: "40px", borderRadius: "8px", border: " 1px solid #CCCCCC", padding: '8px' }}
-                          name='name'
-                          type='text'
-                          value={editchild.name}
-                          onChange={handleEditChange}
-                          required
-                        />
-                      </div>
-                      <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginTop: '20px', textFieldStyle }}>
-                        <label style={{}}>Gender:</label>
-                        <label>
-                          <input type="radio" name="gender" value="male" onChange={handleEditChange} checked={editchild.gender === "male"} /> Male
-                        </label>
-                        <label>
-                          <input type="radio" name="gender" value="female" onChange={handleEditChange} checked={editchild.gender === "female"} /> Female
-                        </label>
-                        <label>
-                          <input type="radio" name="gender" value="others" onChange={handleEditChange} checked={editchild.gender === "others"} /> Others
-                        </label>
-                      </div>
-                    </Stack>
-                    <Stack direction={'row'} sx={{ display: "flex", gap: "15px" }}>
-                      <div style={textFieldStyle}>
-                        <label>School Name</label>
-                        <input 
-                          style={{ height: "40px", borderRadius: "8px", border: " 1px solid #CCCCCC", padding: '8px' }}
-                          name='schoolName'
-                          onChange={handleEditChange}
-                          value={editchild.schoolName}
-                          required
-                        />
-                      </div>
-                      <div style={textFieldStyle}>
-                        <label>Date Of Birth</label>
-                        <input 
-                          style={{ height: "40px", borderRadius: "8px", border: " 1px solid #CCCCCC", padding: '8px' }}
-                          name='dateOfBirth'
-                          type='date'
-                          onChange={handleEditChange}
-                          value={editchild.dateOfBirth}
-                          required
-                        />
-                      </div>
-                    </Stack>
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: "15px", width: "100%" }}>
-                      <label>Description</label>
-                      <textarea 
-                        style={{ height: "70px", borderRadius: "8px", border: " 1px solid #CCCCCC", padding: '8px' }}
-                        name='description'
-                        onChange={handleEditChange}
-                        value={editchild.description}
-                      />
-                    </Box>
-                    <Box sx={{ width: "400px", display: "flex", flexDirection: "column", alignItems: 'center', gap: "20px" }}>
-                        <Box component="img" src={elearning} />
-                        <Box>
-                            <Typography variant='h4' color='"primary' sx={{ fontSize: "18px", fontWeight: "600" }}>
-                                Start Learning
-                            </Typography>
+                {/* Parent Details Modal */}
+                <Modal
+                    open={openParent}
+                    onClose={handleParentClose}
+                    closeAfterTransition
+                    BackdropComponent={Backdrop}
+                    BackdropProps={{ timeout: 500 }}
+                >
+                    <Fade in={openParent}>
+                        <Box sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            bgcolor: 'background.paper',
+                            boxShadow: 24,
+                            p: 4,
+                            height: "720px",
+                            width: "65%",
+                            borderRadius: "20px",
+                            overflow: "hidden"
+                        }}>
+                            {requestDetail && (
+                                <TherapistViewParentDetails 
+                                    acceptParentrequest={acceptParentRequest} 
+                                    rejectParentrequest={rejectParentRequest} 
+                                    handleParentClose={handleParentClose} 
+                                    requestDetail={requestDetail}
+                                />
+                            )}
                         </Box>
-                        <Box>
-                            <Typography variant='p' color='primary' sx={{ fontSize: "14px", fontWeight: "500", textAlign: 'justify' }}>
-                                Access personalized plans, track progress, and collaborate.
-                            </Typography>
+                    </Fade>
+                </Modal>
+
+                {/* Edit Child Modal */}
+                <Modal
+                    aria-labelledby="transition-modal-title"
+                    aria-describedby="transition-modal-description"
+                    open={editChildOpen}
+                    onClose={handleEditChildClose}
+                    closeAfterTransition
+                    slots={{ backdrop: Backdrop }}
+                    slotProps={{
+                        backdrop: {
+                            timeout: 500,
+                        },
+                    }}
+                >
+                    <Fade in={editChildOpen}>
+                        <Box sx={editChildStyle}>
+                            <Box display={"flex"} justifyContent={"space-between"} alignItems={"center"}>
+                                <Typography variant='h4' sx={{ fontSize: "18px", fontWeight: "600" }}>Edit Child</Typography>
+                                <CloseIcon onClick={handleEditChildClose} sx={{ fontSize: "18px", cursor: "pointer" }} />
+                            </Box>
+                            <hr />
+                            <Box sx={{ mt: 3 }}>
+                                <Stack spacing={3}>
+                                    <Box sx={textFieldStyle}>
+                                        <label>Name</label>
+                                        <input 
+                                            style={{ height: "40px", borderRadius: "8px", border: "1px solid #CCCCCC", padding: '8px' }}
+                                            name='name'
+                                            type='text'
+                                            value={editchild.name}
+                                            onChange={handleEditChange}
+                                            required
+                                        />
+                                    </Box>
+
+                                    <Box sx={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                        <label>Gender:</label>
+                                        <label>
+                                            <input 
+                                                type="radio" 
+                                                name="gender" 
+                                                value="male" 
+                                                onChange={handleEditChange} 
+                                                checked={editchild.gender === "male"} 
+                                            /> Male
+                                        </label>
+                                        <label>
+                                            <input 
+                                                type="radio" 
+                                                name="gender" 
+                                                value="female" 
+                                                onChange={handleEditChange} 
+                                                checked={editchild.gender === "female"} 
+                                            /> Female
+                                        </label>
+                                        <label>
+                                            <input 
+                                                type="radio" 
+                                                name="gender" 
+                                                value="others" 
+                                                onChange={handleEditChange} 
+                                                checked={editchild.gender === "others"} 
+                                            /> Others
+                                        </label>
+                                    </Box>
+
+                                    <Box sx={{ display: 'flex', gap: 2 }}>
+                                        <Box sx={textFieldStyle}>
+                                            <label>School Name</label>
+                                            <input 
+                                                style={{ height: "40px", borderRadius: "8px", border: "1px solid #CCCCCC", padding: '8px' }}
+                                                name='schoolName'
+                                                onChange={handleEditChange}
+                                                value={editchild.schoolName}
+                                                required
+                                            />
+                                        </Box>
+                                        <Box sx={textFieldStyle}>
+                                            <label>Date Of Birth</label>
+                                            <input 
+                                                style={{ height: "40px", borderRadius: "8px", border: "1px solid #CCCCCC", padding: '8px' }}
+                                                name='dateOfBirth'
+                                                type='date'
+                                                onChange={handleEditChange}
+                                                value={editchild.dateOfBirth}
+                                                required
+                                            />
+                                        </Box>
+                                    </Box>
+
+                                    <Box sx={textFieldStyle}>
+                                        <label>Description</label>
+                                        <textarea 
+                                            style={{ height: "70px", borderRadius: "8px", border: "1px solid #CCCCCC", padding: '8px' }}
+                                            name='description'
+                                            onChange={handleEditChange}
+                                            value={editchild.description}
+                                        />
+                                    </Box>
+
+                                    <Box display='flex' justifyContent='center' sx={{ mt: 3 }}>
+                                        <Button 
+                                            variant='contained' 
+                                            color='secondary' 
+                                            sx={{ 
+                                                borderRadius: "25px", 
+                                                height: "40px", 
+                                                width: '200px', 
+                                                padding: '10px 35px' 
+                                            }}
+                                            onClick={handleSubmit}
+                                            disabled={!editchild.name || !editchild.schoolName || !editchild.dateOfBirth || !editchild.gender}
+                                        >
+                                            Confirm
+                                        </Button>
+                                    </Box>
+                                </Stack>
+                            </Box>
                         </Box>
-                    </Box>
-                    <Box sx={{ width: "400px", display: "flex", flexDirection: "column", alignItems: 'center', gap: "20px" }}>
-                        <Box component="img" src={shopping} />
-                        <Box>
-                            <Typography variant='h4' color='"primary' sx={{ fontSize: "18px", fontWeight: "600" }}>
-                                Monitor & Improve
-                            </Typography>
-                        </Box>
-                        <Box>
-                            <Typography variant='p' color='primary' sx={{ fontSize: "14px", fontWeight: "500", textAlign: 'justify' }}>
-                                Receive insights, expert advice, and ongoing support.
-                            </Typography>
-                        </Box>
-                    </Box>
-                </Stack>
+                    </Fade>
+                </Modal>
             </Container>
-            
-                        <Modal
-                open={openParent}
-                onClose={handleParentClose}
-                closeAfterTransition
-                BackdropComponent={Backdrop}
-                BackdropProps={{ timeout: 500 }}
-            >
-                <Fade in={openParent}>
-                    <Box sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        bgcolor: 'background.paper',
-                        boxShadow: 24,
-                        p: 4,
-                        height: "720px",
-                        width: "65%",
-                        borderRadius: "20px",
-                        overflow: "hidden"
-                    }}>
-                        {requestDetail && (
-                            <TherapistViewParentDetails 
-                                acceptParentrequest={acceptParentRequest} 
-                                rejectParentrequest={rejectParentRequest} 
-                                handleParentClose={handleParentClose} 
-                                requestDetail={requestDetail}
-                            />
-                        )}
-                    </Box>
-                </Fade>
-            </Modal>
-
             <Footer />
         </>
     );
