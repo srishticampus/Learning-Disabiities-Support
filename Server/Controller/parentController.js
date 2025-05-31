@@ -74,7 +74,7 @@ const parentLogin=async (req,res)=>{
         if(!isMatch){
             return res.json({message:"Invalid Password."})
         }
-        const token=await jwt.sign({id:parent._id},process.env.SECRET_KEY,{expiresIn:"1hr"});
+        const token=await jwt.sign({id:parent._id},process.env.SECRET_KEY,{expiresIn:"4hr"});
         res.status(200).json({message:"Parent logged in successfully",token:token});
         
     } catch (error) {
@@ -209,4 +209,27 @@ const getAcceptedEducator=async(req,res)=>{
     }
 }
 
-module.exports={parentRegister,uploadProfilePic,parentLogin,parentForgotPassword,parentResetPassword,getParentById,getAllParents,editParentById,getAcceptedEducator};
+const getAcceptedTherapists = async (req, res) => {
+  try {
+    const parentId = req.params.id;
+    const acceptedTherapists = await requestModel.find({
+      parentId: parentId,
+      recipientRole: "theraphist",
+      status: "accepted",
+    }).populate("recipientId");
+
+    if (acceptedTherapists.length === 0) {
+      return res.json({ message: "Therapist not accepted you" });
+    }
+
+    return res.json({
+      message: "Accepted therapists fetched",
+      acceptedTherapists,
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ message: error.message });
+  }
+};
+
+module.exports={getAcceptedTherapists,parentRegister,uploadProfilePic,parentLogin,parentForgotPassword,parentResetPassword,getParentById,getAllParents,editParentById,getAcceptedEducator};

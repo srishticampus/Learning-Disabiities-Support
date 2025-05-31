@@ -64,64 +64,69 @@ const EducatorAllStudents = () => {
         navigate('/educator/profile');
     };
 
-    const fetchAllChildren = async () => {
-        setLoading(true);
-        try {
-            if (useDummyData) {
-                // Dummy data
-                const dummyChildren = [
-                    {
-                        _id: 'child1',
-                        name: 'John Doe',
-                        parentId: { 
-                            _id: '1', 
-                            name: 'Jane Doe',
-                            email: 'jane.doe@example.com'
-                        },
-                        schoolName: 'Springfield Elementary',
-                        dateOfBirth: '2012-04-23',
-                        gender: 'Male',
-                        description: 'John is a curious student who loves science.',
-                        progress: 35,
-                        weeks: 8,
-                        hasLearningPlan: true
-                    },
-                    {
-                        _id: 'child2',
-                        name: 'Emily Smith',
-                        parentId: { 
-                            _id: '2', 
-                            name: 'Robert Smith',
-                            email: 'robert.smith@example.com'
-                        },
-                        schoolName: 'Riverdale High',
-                        dateOfBirth: '2013-06-15',
-                        gender: 'Female',
-                        description: 'Emily is passionate about art and music.',
-                        progress: 75,
-                        weeks: 15,
-                        hasLearningPlan: false
-                    }
-                ];
-                setAllChildren(dummyChildren);
-            } else {
-                const token = localStorage.getItem("token");
-                const educatorId = JSON.parse(localStorage.getItem("educatorDetails"))?._id;
-                const response = await axios.get(
-                    `http://localhost:4000/ldss/educator/getchildrenofallapprovedparents/${educatorId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
-                );
-                setAllChildren(response.data.children);
-            }
-        } catch (error) {
-            console.error("Failed to fetch children:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+const fetchAllChildren = async () => {
+    setLoading(true);
+    try {
+        const token = localStorage.getItem("token");
+        const educatorId = JSON.parse(localStorage.getItem("educatorDetails"))?._id;
+        
+        // First fetch all children
+        const childrenResponse = await axios.get(
+            `http://localhost:4000/ldss/educator/getchildrenofallapprovedparents/${educatorId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
 
+        // Then enrich each child with learning plan data and progress
+        const childrenWithProgress = await Promise.all(
+            childrenResponse.data.children.map(async (child) => {
+                try {
+                    // Fetch learning plan for each child
+                    const planResponse = await axios.get(
+                        `http://localhost:4000/ldss/educator/getstudentplan/${educatorId}/${child._id}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+
+                    const learningPlan = planResponse.data.data?.[0];
+                    let progress = 0;
+                    let weeks = 0;
+
+                    if (learningPlan) {
+                        weeks = learningPlan.planDuration || 0;
+                        // Calculate progress based on completed weeks
+                        const completedWeeks = learningPlan.weeks?.filter(week => 
+                            week.activities.every(activity => activity.status === 'completed')
+                        ).length || 0;
+                        
+                        progress = weeks > 0 ? Math.round((completedWeeks / weeks) * 100) : 0;
+                    }
+
+                    return {
+                        ...child,
+                        hasLearningPlan: !!learningPlan,
+                        progress,
+                        weeks,
+                        learningPlan // Optionally store the whole plan if needed
+                    };
+                } catch (error) {
+                    console.error(`Error processing child ${child._id}:`, error);
+                    return {
+                        ...child,
+                        hasLearningPlan: false,
+                        progress: 0,
+                        weeks: 0
+                    };
+                }
+            })
+        );
+
+        setAllChildren(childrenWithProgress);
+    } catch (error) {
+        console.error("Failed to fetch children:", error);
+        setAllChildren([]);
+    } finally {
+        setLoading(false);
+    }
+};
     // Meeting modal state
     const [openMeeting, setOpenMeeting] = useState(false);
     const [selectedChildId, setSelectedChildId] = useState(null);
@@ -154,13 +159,13 @@ const EducatorAllStudents = () => {
         navigate(`/educator/chat/${parentId}`);
     };
 
-    const handleLearningPlanClick = (childId, hasLearningPlan) => {
-        if (hasLearningPlan) {
-            navigate(`/educator/viewlearningplan/${childId}`);
-        } else {
-            navigate(`/educator/addlearningplan/${childId}`);
-        }
-    };
+const handleLearningPlanClick = (childId, hasLearningPlan) => {
+    if (hasLearningPlan) {
+        navigate(`/educator/editlearningplan/${childId}`);  
+    } else {
+        navigate(`/educator/addlearningplan/${childId}`);
+    }
+};
 
     return (
         <>
@@ -250,7 +255,7 @@ const EducatorAllStudents = () => {
                                     }}>
                                         {/* Student Name and Buttons */}
                                         <Box display="flex" justifyContent="space-between" alignItems="center" width="100%" gap={2}>
-                                            <Link to={`/educator/viewlearningplan/${child._id}`} style={{ textDecoration: "none" }}>
+                                            <Link to={child.hasLearningPlan ? `/educator/editlearningplan/${child._id}` : `/educator/addlearningplan/${child._id}`} style={{ textDecoration: "none" }}>
                                                 <Typography sx={{ 
                                                     fontSize: "24px", 
                                                     fontWeight: "600" 
@@ -276,21 +281,21 @@ const EducatorAllStudents = () => {
                                                     Chat
                                                 </Button>
                                                 
-                                                <Button 
-                                                    startIcon={child.hasLearningPlan ? <Assignment /> : <Add />} 
-                                                    variant='outlined' 
-                                                    color='secondary' 
-                                                    sx={{ 
-                                                        borderRadius: "25px", 
-                                                        height: "45px", 
-                                                        minWidth: '350px', 
-                                                        fontSize: "14px", 
-                                                        fontWeight: "500" 
-                                                    }}
-                                                    onClick={() => handleLearningPlanClick(child._id, child.hasLearningPlan)}
-                                                >
-                                                    {child.hasLearningPlan ? "Learning Plan" : "Add Learning Plan"}
-                                                </Button>
+                                              <Button 
+                                                startIcon={child.hasLearningPlan ? <Assignment /> : <Add />} 
+                                                variant='outlined' 
+                                                color='secondary' 
+                                                sx={{ 
+                                                    borderRadius: "25px", 
+                                                    height: "45px", 
+                                                    minWidth: '350px', 
+                                                    fontSize: "14px", 
+                                                    fontWeight: "500" 
+                                                }}
+                                                onClick={() => handleLearningPlanClick(child._id, child.hasLearningPlan)}
+                                            >
+                                                {child.hasLearningPlan ? "Learning Plan" : "Add Learning Plan"}
+                                            </Button>
                                             </Box>
                                         </Box>
 
@@ -438,7 +443,7 @@ const EducatorAllStudents = () => {
                                         </Box>
 
                                         {/* Action Buttons */}
-                                        <Box display="flex" justifyContent="space-between" alignItems="center" width="100%" mt={2}>
+                                        <Box display="flex" justifyContent="center" alignItems="center" width="100%" mt={2}>
                                             <Button 
                                                 onClick={() => handleMeetingOpen(child._id)} 
                                                 variant='contained' 
@@ -454,7 +459,7 @@ const EducatorAllStudents = () => {
                                                 Meeting
                                             </Button>
                                             
-                                            <Button 
+                                            {/* <Button 
                                                 onClick={() => handleActivityOpen(child._id)} 
                                                 variant='contained' 
                                                 color='secondary' 
@@ -467,7 +472,7 @@ const EducatorAllStudents = () => {
                                                 }}
                                             >
                                                 Activities
-                                            </Button>
+                                            </Button> */}
                                         </Box>
                                     </Box>
                                 </Grid>

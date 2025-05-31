@@ -22,7 +22,7 @@ const pages = [
     { label: 'All students', path: '/educator/allstudents' },
     { label: 'Parents', path: '/educator/acceptedparents' },
     { label: 'Meetings', path: '/educator/meeting' },
-    { label: 'Activities', path: '/educator/viewactivitylibrary' }
+    // { label: 'Activities', path: '/educator/viewactivitylibrary' }
 ];
 
 const EducatorNavbar = ({ homebg = {}, aboutBg = {}, contactbg = {}, navigateToProfile = () => { }, profilebg = {}, educatorDetails = {} }) => {

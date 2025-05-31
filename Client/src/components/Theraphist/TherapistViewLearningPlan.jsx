@@ -7,191 +7,89 @@ import { jwtDecode } from 'jwt-decode';
 
 const TherapistViewLearningPlan = () => {
     const [therapistDetails, setTherapistDetails] = useState({});
-    const [useDummyData, setUseDummyData] = useState(true);
-    
-    // Initialize therapist details from localStorage first
-    useEffect(() => {
-        const storedTherapist = localStorage.getItem("theraphistDetails");
-        if (storedTherapist) {
-            try {
-                const parsedTherapist = JSON.parse(storedTherapist);
-                if (parsedTherapist && parsedTherapist._id) {
-                    setTherapistDetails(parsedTherapist);
-                }
-            } catch (error) {
-                console.error("Error parsing stored therapist:", error);
-                localStorage.removeItem("theraphistDetails");
-            }
-        }
-    }, []);
-
-    const fetchTherapist = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.error("No token found");
-                return;
-            }
-            
-            const decoded = jwtDecode(token);
-            
-            const response = await axios.get(`http://localhost:4000/ldss/theraphist/gettheraphist/${decoded.id}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            
-            if (response.data && response.data.theraphist) {
-                const therapistData = response.data.theraphist;
-                
-                if (therapistData && therapistData._id) {
-                    try {
-                        localStorage.setItem("theraphistDetails", JSON.stringify(therapistData));
-                        setTherapistDetails(therapistData);
-                    } catch (storageError) {
-                        console.error("Failed to store in localStorage:", storageError);
-                        setTherapistDetails(therapistData);
-                    }
-                } else {
-                    console.error("Invalid therapist data structure");
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching therapist:", error);
-            const cachedData = localStorage.getItem("theraphistDetails");
-            if (cachedData) {
-                try {
-                    const parsed = JSON.parse(cachedData);
-                    if (parsed && parsed._id) {
-                        setTherapistDetails(parsed);
-                    }
-                } catch (parseError) {
-                    console.error("Error parsing cached data:", parseError);
-                }
-            }
-        }
-    }
-
-    useEffect(() => {
-        fetchTherapist();
-    }, []);
-
+    const [studentPlan, setStudentsPlan] = useState(null);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
-    const navigateToProfile = () => {
-        navigate('/theraphist/profile');
-    };
     const { childId } = useParams();
 
-    const [studentPlan, setStudentsPlan] = useState(null);
-    
-    // Dummy data for learning plans
-    const dummyLearningPlans = [
-        {
-            _id: 'plan1',
-            goal: 'Improve reading comprehension',
-            planDuration: 8,
-            weeks: [
-                {
-                    activities: [
-                        {
-                            title: 'Reading Practice',
-                            description: 'Read short stories and answer questions'
-                        },
-                        {
-                            title: 'Vocabulary Building',
-                            description: 'Learn 10 new words each week'
-                        },
-                        {
-                            title: 'Comprehension Exercises',
-                            description: 'Practice identifying main ideas'
-                        }
-                    ]
-                },
-                {
-                    activities: [
-                        {
-                            title: 'Advanced Reading',
-                            description: 'Read longer passages with complex themesRead longer passages with complex themesRead longer passages with complex themesRead longer passages with complex themesRead longer passages with complex themes'
-                        },
-                        {
-                            title: 'Context Clues',
-                            description: 'Practice deducing word meanings from context'
-                        },
-                        {
-                            title: 'Summary Writing',
-                            description: 'Write summaries of read passages'
-                        }
-                    ]
-                },
-                {
-                    activities: [
-                        {
-                            title: 'Advanced Reading',
-                            description: 'Read longer passages with complex themes'
-                        },
-                        {
-                            title: 'Context Clues',
-                            description: 'Practice deducing word meanings from context'
-                        },
-                        {
-                            title: 'Summary Writing',
-                            description: 'Write summaries of read passages'
-                        }
-                    ]
-                },
-            ]
-        }
-    ];
-
-    const fetchLearningPlanOfStudent = async () => {
-        if (useDummyData) {
-            setStudentsPlan(dummyLearningPlans);
-        } else {
+    // Initialize therapist details
+    useEffect(() => {
+        const fetchTherapist = async () => {
             try {
-                const token = localStorage.getItem("token");
-                const therapistId = therapistDetails._id;
-                const studentPlan = await axios.get(
-                    `http://localhost:4000/ldss/theraphist/getstudentplan/${therapistId}/${childId}`, 
-                    {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }
-                );
-                setStudentsPlan(studentPlan.data.childPlan);
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    console.error("No token found");
+                    return;
+                }
+                
+                const decoded = jwtDecode(token);
+                const response = await axios.get(`http://localhost:4000/ldss/theraphist/gettheraphist/${decoded.id}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                
+                if (response.data?.theraphist?._id) {
+                    setTherapistDetails(response.data.theraphist);
+                    fetchLearningPlan(response.data.theraphist._id, childId);
+                }
             } catch (error) {
-                console.error("Failed to fetch learning plan:", error);
+                console.error("Error fetching therapist:", error);
+                setLoading(false);
             }
+        };
+
+        fetchTherapist();
+    }, [childId]);
+
+    const fetchLearningPlan = async (therapistId, studentId) => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.get(
+                `http://localhost:4000/ldss/theraphist/getstudentplan/${therapistId}/${studentId}`, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            if (response.data?.data) {
+                setStudentsPlan(response.data.data);
+            } else {
+                setStudentsPlan(null);
+            }
+        } catch (error) {
+            console.error("Failed to fetch learning plan:", error);
+            setStudentsPlan(null);
+        } finally {
+            setLoading(false);
         }
     };
 
-    useEffect(() => {
-        if (therapistDetails._id) {
-            fetchLearningPlanOfStudent();
-        }
-    }, [therapistDetails]);
-
-    const deleteLearningPlan = async (planid) => {
-        if (useDummyData) {
-            setStudentsPlan(null);
-            alert("Dummy learning plan deleted");
-        } else {
-            try {
-                const token = localStorage.getItem("token");
-                await axios.delete(
-                    `http://localhost:4000/ldss/theraphist/deleteplan/${planid}`, 
-                    {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }
-                );
-                fetchLearningPlanOfStudent();
-            } catch (error) {
-                console.error("Failed to delete learning plan:", error);
-            }
+    const deleteLearningPlan = async (planId) => {
+        try {
+            const token = localStorage.getItem("token");
+            await axios.delete(
+                `http://localhost:4000/ldss/theraphist/deleteplan/${planId}`, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            navigate('/therapist/allstudents');
+        } catch (error) {
+            console.error("Failed to delete learning plan:", error);
         }
     };
 
     const handleEdit = () => {
         navigate(`/therapist/editlearningplan/${childId}`);
     };
+
+    const navigateToProfile = () => {
+        navigate('/therapist/profile');
+    };
+
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+                <Typography>Loading...</Typography>
+            </Box>
+        );
+    }
 
     return (
         <>
@@ -228,14 +126,14 @@ const TherapistViewLearningPlan = () => {
                         </Typography>
                     </Box>
                     
-                    {Array.isArray(studentPlan[0]?.weeks) && studentPlan[0]?.weeks.map((week, weekIndex) => (
+                    {studentPlan[0]?.weeks?.map((week, weekIndex) => (
                         <Box key={weekIndex} display={'flex'} flexDirection={'column'} m={"20px 50px"} sx={{ height: "268px", background: "#F0F6FE" }}>
                             <Typography variant='h6' color='primary' sx={{ fontSize: "24px", fontWeight: "500", p: "20px 30px" }}>
                                 Week {weekIndex + 1}
                             </Typography>
 
                             <Box display={"flex"} alignItems={"center"} gap={1}>
-                                {Array.isArray(week.activities) && week.activities.map((activity, index) => (
+                                {week.activities?.map((activity, index) => (
                                     <Box key={index} display={'flex'} flexDirection={'column'} gap={1} width={"33%"} p={"10px 30px"}>
                                         <Typography variant='h6' color='primary' sx={{ fontSize: "18px", fontWeight: "600" }}>
                                             Activity {index + 1}
@@ -254,7 +152,7 @@ const TherapistViewLearningPlan = () => {
                         </Box>
                     ))}
                     
-                    <Box display={'flex'} alignItems={'center'} justifyContent={'center'} gap={3} sx={{marginBottom:"50px",}}>
+                    <Box display={'flex'} alignItems={'center'} justifyContent={'center'} gap={3} sx={{marginBottom:"50px"}}>
                         <Button 
                             onClick={() => deleteLearningPlan(studentPlan[0]._id)} 
                             variant='outlined' 

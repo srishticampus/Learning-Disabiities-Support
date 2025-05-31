@@ -39,7 +39,7 @@ const TheraphistContact = () => {
     },[]);
     const navigate = useNavigate();
     const navigateToProfile = () => {
-        navigate('/theraphist/profile');
+        navigate('/therapist/profile');
     }
   return (
     <>

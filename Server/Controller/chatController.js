@@ -50,18 +50,61 @@ const ChatController = {
     res.json(conv);
   },
 
-  async addMessage(req, res) {
+async  addMessage(req, res, next) {
+  try {
     const { id } = req.params;
     const { sender, senderModel, content } = req.body;
+
+    // Validate senderModel against allowed values
+    const allowedModels = ['parent', 'educator', 'therapist'];
+    const normalizedSenderModel = senderModel.toLowerCase();
+    
+    if (!allowedModels.includes(normalizedSenderModel)) {
+      return res.status(400).json({ 
+        message: `Invalid sender model. Allowed values are: ${allowedModels.join(', ')}` 
+      });
+    }
+
     const conv = await Conversation.findById(id);
-    if (!conv) throw new NotFoundError('Conversation not found');
-    if (!conv.participants.includes(sender)) throw new console.log('Sender not part of this conversation');
+    if (!conv) {
+      return res.status(404).json({ message: 'Conversation not found' });
+    }
 
-    const newMessage = { sender, senderModel, content, timestamp: new Date(), read: false };
-    await conv.addMessage(newMessage);
-    res.status(201).json(newMessage);
-  },
+    if (!conv.participants.includes(sender)) {
+      return res.status(403).json({ message: 'Sender not part of this conversation' });
+    }
 
+    const newMessage = {
+      sender,
+      senderModel: normalizedSenderModel, // Use normalized lowercase value
+      content,
+      timestamp: new Date(),
+      read: false
+    };
+
+    // Add message to conversation and save
+    const updatedConv = await conv.addMessage(newMessage);
+
+    res.status(201).json({
+      message: 'Message added successfully',
+      conversation: updatedConv,
+      newMessage
+    });
+
+  } catch (error) {
+    console.error('Error adding message:', error);
+    
+    // Handle mongoose validation errors specifically
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: 'Validation error',
+        errors: Object.values(error.errors).map(err => err.message)
+      });
+    }
+    
+    res.status(500).json({ message: 'Internal server error' });
+  }
+},
   async markAsRead(req, res) {
     const { id } = req.params;
     const { userId } = req.body;

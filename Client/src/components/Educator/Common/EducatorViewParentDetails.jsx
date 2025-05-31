@@ -14,8 +14,7 @@ import FemaleIcon from '@mui/icons-material/Female';
 import DateRangeIcon from '@mui/icons-material/DateRange';
 
 const EducatorViewParentDetails = ({ handleParentClose, requestDetail, acceptParentrequest, rejectParentrequest }) => {
-    const [useDummyData, setUseDummyData] = React.useState(true); // Toggle for dummy data
-    
+    const useDummyData = true;    
     // Dummy data for parent
     const dummyParent = {
         _id: 'parent1',
@@ -50,49 +49,111 @@ const EducatorViewParentDetails = ({ handleParentClose, requestDetail, acceptPar
 
     const [parent, setParent] = React.useState({});
     const [children, setChildren] = React.useState([]);
+const [loading, setLoading] = React.useState(true);
+const [error, setError] = React.useState(null);
 
-    const fetchParent = async () => {
-        if (useDummyData) {
+    const fetchChildOfParent = async () => {
+    if (!useDummyData) {
+        setChildren(dummyChildren);
+    } else {
+        try {
+            const parentId = requestDetail.parentId;
+            if (!parentId) {
+                console.error("Parent ID is missing");
+                return;
+            }
+            
+            const token = localStorage.getItem("token");
+            const response = await axios.get(
+                `http://localhost:4000/ldss/parent/getallchildofparent/${parentId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setChildren(response.data.child || []);
+            console.log("Children data:", response.data);
+        } catch (error) {
+            console.error("Failed to fetch children:", error);
+        }
+    }
+};
+const fetchParent = async () => {
+        if (!useDummyData) {
             setParent(dummyParent);
         } else {
             try {
                 const parentId = requestDetail.parentId;
+                if (!parentId) {
+                    throw new Error("Parent ID is missing");
+                }
+                
                 const token = localStorage.getItem("token");
-                const parent = await axios.get(`http://localhost:4000/ldss/parent/getparent/${parentId}`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                });
-                setParent(parent.data.parent);
+                const response = await axios.get(
+                    `http://localhost:4000/ldss/parent/getparent/${parentId}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setParent(response.data.parent);
             } catch (error) {
                 console.error("Failed to fetch parent:", error);
+                setError("Failed to load parent details");
             }
         }
     };
 
-    const fetchChildOfParent = async () => {
-        if (useDummyData) {
-            setChildren(dummyChildren);
+const fetchParentByRequestId = async (requestId) => {
+    console.log("[DEBUG] fetchParentByRequestId called with:", requestId);
+    try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+            `http://localhost:4000/ldss/educator/viewrequestedparent/${requestId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        console.log("[DEBUG] API response:", response.data);
+        
+        // Make sure the response contains the parentId
+        if (response.data.viewRequest && response.data.viewRequest.parentId) {
+            setRequestDetail({
+                _id: response.data.viewRequest._id,
+                parentId: response.data.viewRequest.parentId._id, // Ensure this is the correct path
+                status: response.data.viewRequest.status
+            });
+            handleParentOpen();
         } else {
-            try {
-                const parentId = requestDetail.parentId;
-                const token = localStorage.getItem("token");
-                const children = await axios.get(`http://localhost:4000/ldss/parent/getallchildofparent/${parentId}`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                });
-                setChildren(children.data.child);
-            } catch (error) {
-                console.error("Failed to fetch children:", error);
-            }
+            console.error("Parent ID not found in response");
         }
-    };
+    } catch (error) {
+        console.error("Failed to fetch parent details:", error);
+    }
+};
 
-    React.useEffect(() => {
-        fetchParent();
-        fetchChildOfParent();
-    }, []);
+React.useEffect(() => {
+        console.log("[ChildDetails] requestDetail changed:", requestDetail);
+        if (requestDetail?.parentId) {
+            setLoading(true);
+            Promise.all([fetchParent(), fetchChildOfParent()])
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                    setError("Failed to load data");
+                })
+                .finally(() => setLoading(false));
+        }
+    }, [requestDetail]);
+
+    if (!requestDetail?.parentId) {
+        return (
+            <Box sx={{ p: 4, textAlign: 'center' }}>
+                <Typography color="error">Parent information not available</Typography>
+            </Box>
+        );
+    }
+
+    if (loading) {
+        return <Box sx={{ p: 4, textAlign: 'center' }}>Loading...</Box>;
+    }
+
+    if (error) {
+        return <Box sx={{ p: 4, textAlign: 'center', color: 'error.main' }}>{error}</Box>;
+    }
+    
 
     return (
         <>
@@ -132,67 +193,73 @@ const EducatorViewParentDetails = ({ handleParentClose, requestDetail, acceptPar
                 </Box>
             </Box>
 
-            {/* Children Section */}
-            {children.length === 0 ? (
-                <Typography textAlign={'center'} color='primary' variant='h5' sx={{ fontSize: "18px", fontWeight: "600" }}>No child added yet!</Typography>
-            ) : (
-                <Grid sx={{ pt: "20px", width: "100%" }} container spacing={2}>
-                    {children.map((child, index) => (
-                        <Grid key={index} item xs={12} md={6} width={"49%"} sx={{ height:"330px",background: "#F0F6FE" ,borderRadius:"20px"}}>
-                            <Box display={"flex"} flexDirection={"column"} alignItems={"start"} sx={{ p: "15px 30px", height: "100%", background: "#F6F7F9", borderRadius: "205px", gap: "20px", width: "100%" }}>
-                                <Box width={"100%"} display={"flex"} gap={5} justifyContent={"space-between"} alignItems={"center"}>
-                                    <Typography sx={{ fontSize: "32px", fontWeight: "600" }} color='primary'>
-                                        {child.name}
-                                    </Typography>
-                                </Box>
-                                <Box width={"100%"} display={"flex"} justifyContent={"space-between"}>
-                                    <Box sx={{ gap: "20px" }} display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                        <Box display={"flex"} alignItems={"center"} sx={{ gap: "15px" }}>
-                                            <Box sx={{ color: "#1967D2" }}><PersonOutlinedIcon /></Box>
-                                            <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                                <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Name</Typography>
-                                                <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.name}</Typography>
-                                            </Box>
-                                        </Box>
-                                        <Box display={"flex"} alignItems={"center"} sx={{ gap: "15px" }}>
-                                            <Box sx={{ color: "#1967D2" }}><ApartmentOutlinedIcon /></Box>
-                                            <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                                <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>School name</Typography>
-                                                <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.schoolName}</Typography>
-                                            </Box>
-                                        </Box>
-                                    </Box>
-                                        <Box sx={{ borderLeft: "1px solid #CCCCCC" }}>
-                                        <Box sx={{ gap: "20px" }} display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                            <Box display={"flex"} alignItems={"start"} sx={{ gap: "15px", pl: "60px" }}>
-                                                <Box sx={{ color: "#1967D2" }}><DateRangeIcon /></Box>
-                                                <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                                    <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Date of birth</Typography>
-                                                    <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.dateOfBirth}</Typography>
-                                                </Box>
-                                            </Box>
-                                            <Box display={"flex"} alignItems={"center"} sx={{ gap: "15px", pl: "60px" }}>
-                                                <Box sx={{ color: "#1967D2" }}><FemaleIcon /></Box>
-                                                <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                                    <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Gender</Typography>
-                                                    <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.gender}</Typography>
-                                                </Box>
-                                            </Box>
-                                        </Box>
-                                    </Box>
-
-                                </Box>
+{/* Children Section */}
+{children && children.length === 0 ? (
+    <Typography textAlign={'center'} color='primary' variant='h5' sx={{ fontSize: "18px", fontWeight: "600" }}>
+        No child added yet!
+    </Typography>
+) : (
+    <Grid container spacing={2} sx={{ pt: "20px", width: "100%" }}>
+        {children.map((child, index) => (
+            <Grid key={index} item xs={12} md={6}>
+                <Box sx={{ 
+                    height: "330px",
+                    background: "#F0F6FE",
+                    borderRadius: "20px",
+                    p: "15px 30px",
+                    gap: "20px",
+                    width: "100%"
+                }}>
+                    <Box width={"100%"} display={"flex"} gap={5} justifyContent={"space-between"} alignItems={"center"}>
+                        <Typography sx={{ fontSize: "32px", fontWeight: "600" }} color='primary'>
+                            {child.name}
+                        </Typography>
+                    </Box>
+                    <Box width={"100%"} display={"flex"} justifyContent={"space-between"}>
+                        <Box sx={{ gap: "20px" }} display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                            <Box display={"flex"} alignItems={"center"} sx={{ gap: "15px" }}>
+                                <Box sx={{ color: "#1967D2" }}><PersonOutlinedIcon /></Box>
                                 <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                    <Typography variant='h5' sx={{ fontSize: "18px", fontWeight: "500" }} color='secondary'>Description</Typography>
-                                    <Typography variant='p' sx={{ fontSize: "14px", fontWeight: "500" }} color='primary'>{child.description}</Typography>
+                                    <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Name</Typography>
+                                    <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.name}</Typography>
                                 </Box>
                             </Box>
-                        </Grid>
-                        
-                    ))}
-                </Grid>
-                
-            )}
+                            <Box display={"flex"} alignItems={"center"} sx={{ gap: "15px" }}>
+                                <Box sx={{ color: "#1967D2" }}><ApartmentOutlinedIcon /></Box>
+                                <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                    <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>School name</Typography>
+                                    <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.schoolName}</Typography>
+                                </Box>
+                            </Box>
+                        </Box>
+                        <Box sx={{ borderLeft: "1px solid #CCCCCC" ,marginLeft:"30px"}}>
+                            <Box sx={{ gap: "20px" }} display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                <Box display={"flex"} alignItems={"start"} sx={{ gap: "1px", pl: "40px" }}>
+                                    <Box sx={{ color: "#1967D2" }}><DateRangeIcon /></Box>
+                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                        <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Date of birth</Typography>
+                                        <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.dateOfBirth}</Typography>
+                                    </Box>
+                                </Box>
+                                <Box display={"flex"} alignItems={"center"} sx={{ gap: "15px", pl: "60px" }}>
+                                    <Box sx={{ color: "#1967D2" }}><FemaleIcon /></Box>
+                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                        <Typography variant='p' color='secondary' sx={{ fontSize: "12px", fontWeight: "500" }}>Gender</Typography>
+                                        <Typography variant='h5' color='primary' sx={{ fontSize: "14px", fontWeight: "500" }}>{child.gender}</Typography>
+                                    </Box>
+                                </Box>
+                            </Box>
+                        </Box>
+                    </Box>
+                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                        <Typography variant='h5' sx={{ fontSize: "18px", fontWeight: "500" }} color='secondary'>Description</Typography>
+                        <Typography variant='p' sx={{ fontSize: "14px", fontWeight: "500" }} color='primary'>{child.description}</Typography>
+                    </Box>
+                </Box>
+            </Grid>
+        ))}
+    </Grid>
+)}
 
             {/* Action Buttons */}
             {requestDetail.status === "accepted" ? (

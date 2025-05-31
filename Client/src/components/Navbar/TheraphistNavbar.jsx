@@ -25,7 +25,7 @@ const pages = [
   { label: 'All Students', path: '/therapist/allstudents' },
   { label: 'Parents', path: '/therapist/acceptedparents' },
   { label: 'Meetings', path: '/therapist/meeting' },
-  { label: 'Activities', path: '/therapist/viewactivitylibrary' }
+  // { label: 'Activities', path: '/therapist/viewactivitylibrary' }
 ];
 
 const TheraphistNavbar = ({ homebg = {}, aboutBg = {}, profilebg = {}, navigateToProfile = () => { }, theraphistdetails = {}, contactbg = {} }) => {

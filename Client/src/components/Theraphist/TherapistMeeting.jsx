@@ -14,7 +14,8 @@ import AddMeeting from './Common/addMeeting';
 const TherapistMeeting = () => {
     const [therapistDetails, setTherapistDetails] = useState({});
     const [meetings, setMeetings] = useState([]);
-    const [loading, setLoading] = useState(true); // Added loading state
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     
     const homebg = {
         backgroundColor: "#F6F7F9"
@@ -39,14 +40,12 @@ const TherapistMeeting = () => {
             if (response.data && response.data.theraphist) {
                 const therapistData = response.data.theraphist;
                 
-                // Validate before storing
                 if (therapistData && therapistData._id) {
                     try {
                         localStorage.setItem("theraphistDetails", JSON.stringify(therapistData));
                         setTherapistDetails(therapistData);
                     } catch (storageError) {
                         console.error("Failed to store in localStorage:", storageError);
-                        // Fallback to state only
                         setTherapistDetails(therapistData);
                     }
                 } else {
@@ -55,7 +54,6 @@ const TherapistMeeting = () => {
             }
         } catch (error) {
             console.error("Error fetching therapist:", error);
-            // If API fails, check if we have cached data
             const cachedData = localStorage.getItem("theraphistDetails");
             if (cachedData) {
                 try {
@@ -72,8 +70,40 @@ const TherapistMeeting = () => {
         }
     };
 
+    const fetchAllMeetings = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.error("No token found");
+                setError("Authentication required");
+                return;
+            }
+            
+            const decoded = jwtDecode(token);
+            setLoading(true);
+            console.log(decoded.id);
+            
+            const response = await axios.get(`http://localhost:4000/ldss/therapist/viewmeeting/${decoded.id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            console.log(response);
+            
+            if (response.data && response.data.meetings) {
+                setMeetings(response.data.meetings);
+            } else {
+                setMeetings([]);
+            }
+        } catch (error) {
+            console.error("Error fetching meetings:", error);
+            setError("Failed to load meetings");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        // First try to load from localStorage
         const storedTherapist = localStorage.getItem("theraphistDetails");
         if (storedTherapist) {
             try {
@@ -86,100 +116,20 @@ const TherapistMeeting = () => {
             }
         }
         
-        // Then fetch fresh data
         fetchTherapist();
         fetchAllMeetings();
     }, []);
 
     const navigate = useNavigate();
     const navigateToProfile = () => {
-        navigate('/theraphist/profile');
+        navigate('/therapist/profile');
     };
 
     const [addMeetingopen, setAddMeetingOpen] = React.useState(false);
     const handleAddMeetingOpen = () => setAddMeetingOpen(true);
-    const handleAddMeetingClose = () => setAddMeetingOpen(false);
-    const fetchAllMeetings = async () => {
-        // Dummy data with more details
-        const dummyMeetings = [
-            {
-                _id: "1",
-                meetingTitle: "Initial Consultation",
-                date: "2023-06-15",
-                startTime: "10:00 AM",
-                endTime: "11:00 AM",
-                meetLink: "https://meet.google.com/abc-def-ghi",
-                status: "upcoming",
-                childId: {
-                    name: "Alice Johnson",
-                    dateOfBirth: "2018-05-10",
-                    gender: "Female",
-                    parentId: {
-                        name: "Robert Johnson",
-                        email: "robert.j@example.com",
-                        phone: "+1 555-123-4567"
-                    }
-                }
-            },
-            {
-                _id: "2",
-                meetingTitle: "Progress Review Session",
-                date: "2023-06-20",
-                startTime: "02:00 PM",
-                endTime: "03:30 PM",
-                meetLink: "https://meet.google.com/jkl-mno-pqr",
-                status: "upcoming",
-                childId: {
-                    name: "Michael Brown",
-                    dateOfBirth: "2017-11-22",
-                    gender: "Male",
-                    parentId: {
-                        name: "Sarah Brown",
-                        email: "sarah.b@example.com",
-                        phone: "+1 555-987-6543"
-                    }
-                }
-            },
-            {
-                _id: "3",
-                meetingTitle: "Behavioral Strategy Discussion",
-                date: "2023-06-25",
-                startTime: "09:30 AM",
-                endTime: "10:15 AM",
-                meetLink: "https://meet.google.com/stu-vwx-yza",
-                status: "completed",
-                childId: {
-                    name: "Emma Wilson",
-                    dateOfBirth: "2019-03-15",
-                    gender: "Female",
-                    parentId: {
-                        name: "David Wilson",
-                        email: "david.w@example.com",
-                        phone: "+1 555-456-7890"
-                    }
-                }
-            },
-            {
-                _id: "4",
-                meetingTitle: "Follow-up Session",
-                date: "2023-07-02",
-                startTime: "11:00 AM",
-                endTime: "12:00 PM",
-                meetLink: "",
-                status: "cancelled",
-                childId: {
-                    name: "James Miller",
-                    dateOfBirth: "2016-08-30",
-                    gender: "Male",
-                    parentId: {
-                        name: "Jennifer Miller",
-                        email: "jennifer.m@example.com",
-                        phone: "+1 555-789-0123"
-                    }
-                }
-            }
-        ];
-        setMeetings(dummyMeetings);
+    const handleAddMeetingClose = () => {
+        setAddMeetingOpen(false);
+        fetchAllMeetings(); // Refresh meetings after adding a new one
     };
 
     const handleJoinMeeting = (meetLink) => {
@@ -200,8 +150,19 @@ const TherapistMeeting = () => {
     };
 
     const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
         return new Date(dateString).toLocaleDateString(undefined, options);
+    };
+
+    const formatTime = (timeString) => {
+        if (!timeString) return 'N/A';
+        // Assuming time is stored in HH:MM format
+        const [hours, minutes] = timeString.split(':');
+        const hour = parseInt(hours, 10);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        return `${hour12}:${minutes} ${ampm}`;
     };
 
     return (
@@ -226,14 +187,34 @@ const TherapistMeeting = () => {
                         Meetings
                     </Typography>
                 </Breadcrumbs>
+                {/* <Button 
+                    variant="contained" 
+                    color="primary"
+                    onClick={handleAddMeetingOpen}
+                    sx={{ borderRadius: "25px" }}
+                >
+                    Add Meeting
+                </Button> */}
             </Box>
             
-            <Box sx={{ background: "white" }}>
-                <Box display={'flex'} flexDirection={'column'} gap={2}>
-                    {meetings.map((meeting, index) => {
-                        return (
+            {loading ? (
+                <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: "200px" }}>
+                    <Typography variant="h6" color="textSecondary">
+                        Loading meetings...
+                    </Typography>
+                </Box>
+            ) : error ? (
+                <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: "200px" }}>
+                    <Typography variant="h6" color="error">
+                        {error}
+                    </Typography>
+                </Box>
+            ) : (
+                <Box sx={{ background: "white" }}>
+                    <Box display={'flex'} flexDirection={'column'} gap={2}>
+                        {meetings.map((meeting, index) => (
                             <Box 
-                                key={index} 
+                                key={meeting._id || index} 
                                 display="flex" 
                                 alignItems="center" 
                                 sx={{ 
@@ -263,7 +244,7 @@ const TherapistMeeting = () => {
                                                     Student's name
                                                 </Typography>
                                                 <Typography variant="h6" color="text.primary" sx={{ fontSize: "14px", fontWeight: "500" }}>
-                                                    {meeting.childId.name}
+                                                    {meeting.childId?.name || 'N/A'}
                                                 </Typography>
                                             </Box>
                                         </Box>
@@ -274,7 +255,7 @@ const TherapistMeeting = () => {
                                                     Parent name
                                                 </Typography>
                                                 <Typography variant="h6" color="text.primary" sx={{ fontSize: "14px", fontWeight: "500" }}>
-                                                    {meeting.childId.parentId?.name}
+                                                    {meeting.parentId?.name || 'N/A'}
                                                 </Typography>
                                             </Box>
                                         </Box>
@@ -290,18 +271,20 @@ const TherapistMeeting = () => {
                                                     Date of birth
                                                 </Typography>
                                                 <Typography variant="h6" color="text.primary" sx={{ fontSize: "14px", fontWeight: "500" }}>
-                                                    {meeting.childId.dateOfBirth}
+                                                    {meeting.childId?.dateOfBirth ? formatDate(meeting.childId.dateOfBirth) : 'N/A'}
                                                 </Typography>
                                             </Box>
                                         </Box>
                                         <Box display="flex" alignItems="center" sx={{ gap: "15px", pl: "50px" }}>
-                                            <Box sx={{ color: "#1967D2" }}><FemaleIcon /></Box>
+                                            <Box sx={{ color: "#1967D2" }}>
+                                                {meeting.childId?.gender === 'Female' ? <FemaleIcon /> : <MaleIcon />}
+                                            </Box>
                                             <Box display="flex" flexDirection="column" alignItems="start">
                                                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: "12px", fontWeight: "500" }}>
                                                     Gender
                                                 </Typography>
                                                 <Typography variant="h6" color="text.primary" sx={{ fontSize: "14px", fontWeight: "500" }}>
-                                                    {meeting.childId.gender}
+                                                    {meeting.childId?.gender || 'N/A'}
                                                 </Typography>
                                             </Box>
                                         </Box>
@@ -327,17 +310,18 @@ const TherapistMeeting = () => {
                                                     Meeting
                                                 </Typography>
                                                 <Typography variant="h6" color="text.primary" sx={{ fontSize: "14px", fontWeight: "500" }}>
-                                                    {meeting.meetingTitle}
+                                                    {meeting.meetingTitle || 'N/A'}
                                                 </Typography>
                                             </Box>
                                         </Box>
                                         <Box display="flex" alignItems="center" sx={{ gap: "15px" }}>
+                                            <Box sx={{ color: "#1967D2" }}><DateRangeIcon /></Box>
                                             <Box display="flex" flexDirection="column" alignItems="start">
                                                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: "12px", fontWeight: "500" }}>
                                                     Date
                                                 </Typography>
                                                 <Typography variant="h6" color="text.primary" sx={{ fontSize: "14px", fontWeight: "500" }}>
-                                                    {meeting.date}
+                                                    {formatDate(meeting.date)}
                                                 </Typography>
                                             </Box>
                                         </Box>
@@ -347,15 +331,28 @@ const TherapistMeeting = () => {
                                     
                                     <Box sx={{ gap: "20px", p: "20px" }} display="flex" flexDirection="column" alignItems="start">
                                         <Box display="flex" alignItems="center" sx={{ gap: "15px", pl: "50px" }}>
+                                            <Box sx={{ color: "#1967D2" }}><AccessTimeIcon /></Box>
                                             <Box display="flex" flexDirection="column" alignItems="start">
                                                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: "12px", fontWeight: "500" }}>
                                                     Time
                                                 </Typography>
                                                 <Typography variant="h6" color="text.primary" sx={{ fontSize: "14px", fontWeight: "500" }}>
-                                                    {meeting.startTime} - {meeting.endTime}
+                                                    {formatTime(meeting.startTime)} - {formatTime(meeting.endTime)}
                                                 </Typography>
                                             </Box>
                                         </Box>
+                                        {/* <Box display="flex" alignItems="center" sx={{ gap: "15px", pl: "50px" }}>
+                                            <Box display="flex" flexDirection="column" alignItems="start">
+                                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: "12px", fontWeight: "500" }}>
+                                                    Status
+                                                </Typography>
+                                                <Chip 
+                                                    label={meeting.status || 'unknown'} 
+                                                    color={getStatusColor(meeting.status)} 
+                                                    size="small"
+                                                />
+                                            </Box>
+                                        </Box> */}
                                     </Box>
                                 </Box>
 
@@ -377,25 +374,26 @@ const TherapistMeeting = () => {
                                     Join
                                 </Button>
                             </Box>
-                        )
-                    })}
-                </Box>
-                
-                {/* Empty state */}
-                {meetings.length === 0 && (
-                    <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: "200px" }}>
-                        <Typography variant="h6" color="textSecondary">
-                            No meetings scheduled yet
-                        </Typography>
+                        ))}
                     </Box>
-                )}
-            </Box>
+                    
+                    {/* Empty state */}
+                    {meetings.length === 0 && !loading && (
+                        <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: "200px" }}>
+                            <Typography variant="h6" color="textSecondary">
+                                No meetings scheduled yet
+                            </Typography>
+                        </Box>
+                    )}
+                </Box>
+            )}
 
             <AddMeeting 
                 handleAddMeetingOpen={handleAddMeetingOpen} 
                 addMeetingopen={addMeetingopen} 
                 handleAddMeetingClose={handleAddMeetingClose} 
                 fetchAllMeetings={fetchAllMeetings}
+                therapistId={therapistDetails._id}
             />
         </>
     )

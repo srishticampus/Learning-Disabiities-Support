@@ -60,7 +60,12 @@ const EducatorProfile = () => {
     });
 
     // Personal Info State
+    // Personal Info State
     const [personalData, setPersonalData] = useState({
+        educationalQualification: "",
+        yearsOfExperience: "",
+        languages: "",
+        availability: "",
         educationalQualification: "",
         yearsOfExperience: "",
         languages: "",
@@ -70,7 +75,20 @@ const EducatorProfile = () => {
 
     const [imagePreview, setImagePreview] = useState(null);
     const [certificationPreview, setCertificationPreview] = useState(null);
-    const [educatorDetails, setEducatorDetails] = useState(null);
+    
+    const [educatorDetails, setEducatorDetails] = useState({
+        name: "",
+        email: "",
+        address: "",
+        phone: "",
+        profilePic: null,
+        educationalQualification: "",
+        yearsOfExperience: "",
+        languages: "",
+        availability: "",
+        certification: null
+    });
+    
     const [error, setError] = useState({});
     const [personalError, setPersonalError] = useState({});
     const [open, setOpen] = useState(false);
@@ -86,8 +104,8 @@ const EducatorProfile = () => {
     }, []);
 
     useEffect(() => {
-        if (!localStorage.getItem("educatorDetails") && !localStorage.getItem("token")) {
-            navigate("/educator/login");
+        if (localStorage.getItem("educatorDetails") == null) {
+            navigate("/");
         }
     }, [navigate]);
 
@@ -200,7 +218,7 @@ const EducatorProfile = () => {
             errorMessage.availability = "Availability is required";
             isValid = false;
         }
-        if (!personalData.certification) {
+        if (!personalData.certification && !educatorDetails.certification) {
             errorMessage.certification = "Certification is required";
             isValid = false;
         }
@@ -275,6 +293,9 @@ const EducatorProfile = () => {
         formData.append("yearsOfExperience", personalData.yearsOfExperience);
         formData.append("languages", personalData.languages);
         formData.append("availability", personalData.availability);
+        if (personalData.certification) {
+            formData.append("certification", personalData.certification);
+        }
         if (personalData.certification) {
             formData.append("certification", personalData.certification);
         }
@@ -370,7 +391,6 @@ const EducatorProfile = () => {
     return (
         <>
             <EducatorNavbar profilebg={profilebg} educatorDetails={educatorDetails} />
-            
             {/* Logout Modal */}
             <div>
                 <Modal
@@ -539,6 +559,10 @@ const EducatorProfile = () => {
                                                 <option value="Master's in Education">Master's in Education</option>
                                                 <option value="PhD in Education">PhD in Education</option>
                                                 <option value="Diploma in Education">Diploma in Education</option>
+                                                <option value="Bachelor's in Education">Bachelor's in Education</option>
+                                                <option value="Master's in Education">Master's in Education</option>
+                                                <option value="PhD in Education">PhD in Education</option>
+                                                <option value="Diploma in Education">Diploma in Education</option>
                                             </select>
                                             {personalError.educationalQualification && <span style={{ color: 'red', fontSize: '12px' }}>{personalError.educationalQualification}</span>}
                                         </div>
@@ -567,10 +591,12 @@ const EducatorProfile = () => {
                                                 <option value="">Select</option>
                                                 <option value="English">English</option>
                                                 <option value="Tamil">Tamil</option>
+                                                <option value="Tamil">Tamil</option>
                                                 <option value="Hindi">Hindi</option>
                                                 <option value="Telugu">Telugu</option>
                                                 <option value="English, Tamil">English, Tamil</option>
                                                 <option value="English, Hindi">English, Hindi</option>
+                                                <option value="English, Telugu">English, Telugu</option>
                                             </select>
                                             {personalError.languages && <span style={{ color: 'red', fontSize: '12px' }}>{personalError.languages}</span>}
                                         </div>
@@ -613,6 +639,11 @@ const EducatorProfile = () => {
                                                 {certificationPreview && (
                                                     <Typography variant="body2" color="textSecondary">
                                                         File selected
+                                                    </Typography>
+                                                )}
+                                                {educatorDetails.certification?.filename && !certificationPreview && (
+                                                    <Typography variant="body2" color="textSecondary">
+                                                        Current file: {educatorDetails.certification.filename}
                                                     </Typography>
                                                 )}
                                             </label>
@@ -698,52 +729,54 @@ const EducatorProfile = () => {
                     </Box>
 
                     {/* Personal Info Section */}
-                    <Box display={"flex"} justifyContent={"space-between"} alignItems={"start"} sx={{ height: "323px", background: '#F6F7F9', borderRadius: "20px", width: "100%", padding: "20px 60px", mt: "50px", flexDirection: "column" }}>
-                        <Box display={"flex"} justifyContent={"center"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "30px" }}>
-                            <Box>
-                                <Typography color='primary' sx={{ fontSize: "24px", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "20px" }} onClick={handlePersonalEditOpen}>
-                                    Personal Info
-                                    <BorderColorOutlinedIcon />
-                                </Typography>
-                            </Box>
-                            <Box sx={{ gap: "400px" }} width={"100%"} display={"flex"} justifyContent={"space-between"} alignItems={"start"}>
-                                <Box display={"flex"} flexDirection={"column"} alignItems={"start"} gap={3}>
-                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                        <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Educational Qualifications</Typography>
-                                        <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
-                                            {educatorDetails.educationalQualification || "Not specified"}
-                                        </Typography>
-                                    </Box>
-                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                        <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Language</Typography>
-                                        <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
-                                            {educatorDetails.languages || "Not specified"}
-                                        </Typography>
-                                    </Box>
-                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                        <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Certification</Typography>
-                                        <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
-                                            {educatorDetails.certification ? "Certified" : "Not specified"}
-                                        </Typography>
-                                    </Box>
+                    {educatorDetails.languages && (
+                        <Box display={"flex"} justifyContent={"space-between"} alignItems={"start"} sx={{ height: "323px", background: '#F6F7F9', borderRadius: "20px", width: "100%", padding: "20px 60px", mt: "50px", flexDirection: "column" }}>
+                            <Box display={"flex"} justifyContent={"center"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "30px" }} >
+                                <Box>
+                                    <Typography color='primary' sx={{ fontSize: "24px", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "20px" }} onClick={handlePersonalEditOpen}>
+                                        Personal Info
+                                        <BorderColorOutlinedIcon />
+                                    </Typography>
                                 </Box>
-                                <Box display={"flex"} flexDirection={"column"} alignItems={"start"} gap={3} sx={{ borderLeft: "1px solid black", pl: 5 }}>
-                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                        <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Years of Experience</Typography>
-                                        <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
-                                            {educatorDetails.yearsOfExperience || "Not specified"}
-                                        </Typography>
+                                <Box sx={{ gap: "400px" }} width={"100%"} display={"flex"} justifyContent={"space-between"} alignItems={"start"}>
+                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"} gap={3}>
+                                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                            <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Educational Qualifications</Typography>
+                                            <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
+                                                {educatorDetails.educationalQualification}
+                                            </Typography>
+                                        </Box>
+                                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                            <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Language</Typography>
+                                            <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
+                                                {educatorDetails.languages}
+                                            </Typography>
+                                        </Box>
+                                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
+                                            <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Certification</Typography>
+                                            <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
+                                                {educatorDetails.certification?.filename || "Not uploaded"}
+                                            </Typography>
+                                        </Box>
                                     </Box>
-                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"}>
-                                        <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Availability</Typography>
-                                        <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
-                                            {educatorDetails.availability || "Not specified"}
-                                        </Typography>
+                                    <Box display={"flex"} flexDirection={"column"} alignItems={"start"} gap={3} sx={{ borderLeft: "1px solid black" }}>
+                                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"} ml={5}>
+                                            <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Years of Experience</Typography>
+                                            <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
+                                                {educatorDetails.yearsOfExperience}
+                                            </Typography>
+                                        </Box>
+                                        <Box display={"flex"} flexDirection={"column"} alignItems={"start"} ml={5}>
+                                            <Typography color='secondary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>Availability</Typography>
+                                            <Typography color='primary' variant='p' sx={{ fontSize: "12px", fontWeight: "600" }}>
+                                                {educatorDetails.availability}
+                                            </Typography>
+                                        </Box>
                                     </Box>
                                 </Box>
                             </Box>
                         </Box>
-                    </Box>
+                    )}
                 </Box>
             </Box>
         </>

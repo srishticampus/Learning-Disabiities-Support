@@ -1,76 +1,65 @@
-import React, { useEffect, useState } from 'react'
-import ParentNavbar from '../Navbar/ParentNavbar'
+import React, { useEffect, useState } from 'react';
+import ParentNavbar from '../Navbar/ParentNavbar';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
-import { Box, Breadcrumbs, Button, Card, CardMedia, CardContent, Grid, Typography, Container } from '@mui/material';
-import LirbraryCardImage from '../../assets/librarycard.png'
+import { Box, Breadcrumbs, Button, Card, CardMedia, CardContent, Grid, Typography, Container, CircularProgress } from '@mui/material';
+import LirbraryCardImage from '../../assets/librarycard.png';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const ParentActivities = () => {
-    const [parentdetails, setParentdetails] = useState({});
+    const [parentDetails, setParentDetails] = useState({});
     const [allActivities, setAllActivities] = useState([]);
     const [myActivities, setMyActivities] = useState([]);
     const [displayedActivities, setDisplayedActivities] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('myActivities');
+    const [loading, setLoading] = useState({
+        all: false,
+        my: false
+    });
 
     useEffect(() => {
-        const parentdetails = localStorage.getItem("parentdetails");
-        setParentdetails(JSON.parse(parentdetails));
-        fetchAllActivities();
-        fetchMyActivities();
+        const parentData = localStorage.getItem("parentDetails");
+        if (parentData) {
+            setParentDetails(JSON.parse(parentData));
+            fetchAllActivities();
+            fetchMyActivities(JSON.parse(parentData)._id);
+        }
     }, []);
 
     const fetchAllActivities = async () => {
         try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const sampleAllActivities = [
-                {
-                    id: 1,
-                    title: "Critical Thinking Debate",
-                    description: "Students are given a real-world issue 'Social media does more harm than good' and are asked to prepare arguments for or against.",
-                    category: "Communication & Cognitive Skills"
-                },
-                {
-                    id: 2,
-                    title: "Creative Story Writing",
-                    description: "Students create original stories based on given prompts, focusing on narrative structure and creative expression.",
-                    category: "Language & Creativity"
-                },
-                {
-                    id: 3,
-                    title: "Science Experiment Lab",
-                    description: "Hands-on experiments demonstrating basic physics principles like gravity and motion using everyday materials.",
-                    category: "STEM Learning"
-                }
-            ];
-            setAllActivities(sampleAllActivities);
+            setLoading(prev => ({ ...prev, all: true }));
+            const token = localStorage.getItem("token");
+            const response = await axios.get('http://localhost:4000/activity/getallactivities', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setAllActivities(response.data.data || []);
+            console.log("All Activities:", response.data.data);
+            
         } catch (error) {
             console.error("Error fetching all activities:", error);
+            toast.error(error.response?.data?.message || "Failed to fetch activities");
+        } finally {
+            setLoading(prev => ({ ...prev, all: false }));
         }
     };
 
-    const fetchMyActivities = async () => {
+    const fetchMyActivities = async (parentId) => {
         try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const sampleMyActivities = [
-                {
-                    id: 4,
-                    title: "Math Puzzle Challenge",
-                    description: "Interactive math puzzles that develop problem-solving skills and numerical fluency through engaging problems.",
-                    category: "Mathematical Thinking",
-                },
-                {
-                    id: 5,
-                    title: "Cultural Exchange Day",
-                    description: "Students research and present about different cultures, promoting global awareness and diversity appreciation.",
-                    category: "Social Studies",
-                }
-            ];
-            setMyActivities(sampleMyActivities);
-            setDisplayedActivities(sampleMyActivities);
+            setLoading(prev => ({ ...prev, my: true }));
+            const token = localStorage.getItem("token");
+            const response = await axios.get(`http://localhost:4000/activity/parent/${parentId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setMyActivities(response.data.data || []);
+            setDisplayedActivities(response.data.data || []);
         } catch (error) {
             console.error("Error fetching my activities:", error);
+            toast.error(error.response?.data?.message || "Failed to fetch your activities");
+        } finally {
+            setLoading(prev => ({ ...prev, my: false }));
         }
     };
 
@@ -92,10 +81,25 @@ const ParentActivities = () => {
     const handleTabChange = (tab) => {
         setActiveTab(tab);
         setSearchTerm('');
-        if (tab === 'myActivities') {
-            setDisplayedActivities(myActivities);
-        } else {
-            setDisplayedActivities(allActivities);
+    };
+
+    const handleEnrollActivity = async (activityId) => {
+        try {
+            const token = localStorage.getItem("token");
+            const parentId = parentDetails._id;
+            
+            await axios.post('http://localhost:4000/activity/enroll', {
+                activityId,
+                parentId
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            toast.success("Activity enrolled successfully!");
+            fetchMyActivities(parentId); // Refresh my activities
+        } catch (error) {
+            console.error("Error enrolling in activity:", error);
+            toast.error(error.response?.data?.message || "Failed to enroll in activity");
         }
     };
 
@@ -106,7 +110,7 @@ const ParentActivities = () => {
 
     return (
         <>
-            <ParentNavbar parentdetails={parentdetails} navigateToProfile={navigateToProfile} />
+            <ParentNavbar parentDetails={parentDetails} navigateToProfile={navigateToProfile} />
             <Box sx={{ background: "white" }}>
                 <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: "46px", background: "#DBE8FA" }}>
                     <Typography color='primary' textAlign="center" sx={{ fontSize: "18px", fontWeight: "600" }}>Activities</Typography>
@@ -183,83 +187,90 @@ const ParentActivities = () => {
                 </Box>
 
                 <Container maxWidth="lg" sx={{ py: 4 }}>
-                    <Grid container spacing={4} justifyContent="center">
-                        {displayedActivities.length > 0 ? (
-                            displayedActivities.map((activity) => (
-                                <Grid item xs={12} sm={6} md={4} key={activity.id} sx={{ display: 'flex', justifyContent: 'center' }}>
-                                    <Card sx={{ 
-                                        width: '100%',
-                                        maxWidth: 345,
-                                        bgcolor: 'transparent',
-                                        boxShadow: 'none',
-                                        p: 2,
-                                        '&:hover': {
-                                            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)'
-                                        }
-                                    }}>
-                                        <CardMedia
-                                            component="img"
-                                            height="200"
-                                            image={LirbraryCardImage}
-                                            alt="Activity Card Image"
-                                            sx={{
-                                                borderRadius: '12px',
-                                                objectFit: 'cover',
-                                                backgroundColor: 'transparent',
-                                                mb: 2
-                                            }}
-                                        />
-
-                                        <CardContent sx={{ 
-                                            p: 0,
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: 1
+                    {(loading.all && activeTab === 'allActivities') || (loading.my && activeTab === 'myActivities') ? (
+                        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+                            <CircularProgress />
+                        </Box>
+                    ) : (
+                        <Grid container spacing={4} justifyContent="center">
+                            {displayedActivities.length > 0 ? (
+                                displayedActivities.map((activity) => (
+                                    <Grid item xs={12} sm={6} md={4} key={activity._id} sx={{ display: 'flex', justifyContent: 'center' }}>
+                                        <Card sx={{ 
+                                            width: '100%',
+                                            maxWidth: 345,
+                                            bgcolor: 'transparent',
+                                            boxShadow: 'none',
+                                            p: 2,
+                                            '&:hover': {
+                                                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)'
+                                            }
                                         }}>
-                                            <Typography gutterBottom variant="h6" component="div" sx={{ fontWeight: 500, color: "#384371" }}>
-                                                {activity.title}
-                                            </Typography>
-                                            
-                                            <Typography variant="h6" sx={{ fontSize: "14px", color: "#384371" }}>
-                                                {activity.description}
-                                            </Typography>
-                                            
-                                            <Typography variant="caption" sx={{ 
-                                                color: 'secondary.main',
-                                                fontWeight: 500,
-                                                display: 'block'
-                                            }}>
-                                                Activity Category
-                                            </Typography>
-                                            
-                                            <Typography variant="h6" sx={{ color: "#384371", mb: 1, fontSize: "13px" }}>
-                                                {activity.category}
-                                            </Typography>
+                                            <CardMedia
+                                                component="img"
+                                                height="200"
+                                                image={activity.image || LirbraryCardImage}
+                                                alt={activity.title}
+                                                sx={{
+                                                    borderRadius: '12px',
+                                                    objectFit: 'cover',
+                                                    backgroundColor: 'transparent',
+                                                    mb: 2
+                                                }}
+                                            />
 
-                                            {/* Conditionally render Enroll button on Explore tab */}
-                                            {activeTab === 'allActivities' && (
-                                                <Button
-                                                    variant="contained"
-                                                    color="secondary"
-                                                    sx={{ alignSelf: 'flex-start', mt: 1, borderRadius: '20px', textTransform: 'none',width:"102%" }}
-                                                >
-                                                    Have a try
-                                                </Button>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-                            ))
-                        ) : (
-                            <Typography sx={{ mt: 4, color: 'text.secondary' }}>
-                                No activities found. {searchTerm && "Try a different search term."}
-                            </Typography>
-                        )}
-                    </Grid>
+                                            <CardContent sx={{ 
+                                                p: 0,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 1
+                                            }}>
+                                                <Typography gutterBottom variant="h6" component="div" sx={{ fontWeight: 500, color: "#384371" }}>
+                                                    {activity.title}
+                                                </Typography>
+                                                
+                                                <Typography variant="h6" sx={{ fontSize: "14px", color: "#384371" }}>
+                                                    {activity.description}
+                                                </Typography>
+                                                
+                                                <Typography variant="caption" sx={{ 
+                                                    color: 'secondary.main',
+                                                    fontWeight: 500,
+                                                    display: 'block'
+                                                }}>
+                                                    Activity Category
+                                                </Typography>
+                                                
+                                                <Typography variant="h6" sx={{ color: "#384371", mb: 1, fontSize: "13px" }}>
+                                                    {activity.category}
+                                                </Typography>
+
+                                                {activeTab === 'allActivities' && (
+                                                    <Button
+                                                        variant="contained"
+                                                        color="secondary"
+                                                        sx={{ alignSelf: 'flex-start', mt: 1, borderRadius: '20px', textTransform: 'none', width: "102%" }}
+                                                        onClick={() => handleEnrollActivity(activity._id)}
+                                                    >
+                                                        Have a try
+                                                    </Button>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+                                ))
+                            ) : (
+                                <Typography sx={{ mt: 4, color: 'text.secondary' }}>
+                                    No activities found. {searchTerm && "Try a different search term."}
+                                </Typography>
+                            )}
+                        </Grid>
+                    )}
                 </Container>
             </Box>
         </>
-    )
-}
+    );
+}   
 
 export default ParentActivities;
+// 

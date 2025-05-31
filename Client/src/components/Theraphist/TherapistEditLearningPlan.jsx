@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Breadcrumbs, Button, Grid, Stack, Typography } from '@mui/material';
+import TherapistNavbar from '../Navbar/TheraphistNavbar';
+import { Box, Breadcrumbs, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
 import axios from "axios";
 import { toast } from 'react-toastify';
-import TheraphistNavbar from '../Navbar/TheraphistNavbar';
-import { jwtDecode } from 'jwt-decode';
 
 const TherapistEditLearningPlan = () => {
     const activityContainerStyle = { 
@@ -25,120 +24,86 @@ const TherapistEditLearningPlan = () => {
 
     const [therapistDetails, setTherapistDetails] = useState({});
     const [learningPlan, setLearningPlan] = useState({
-        goal: 'Improve reading comprehension and math skills',
-        planDuration: 3,
-        weeks: [
-            {
-                activities: [
-                    { 
-                        title: 'Reading Practice', 
-                        description: 'Read short stories and answer comprehension questions' 
-                    },
-                    { 
-                        title: 'Vocabulary Building', 
-                        description: 'Learn 10 new words with definitions and usage' 
-                    },
-                    { 
-                        title: 'Basic Math Drills', 
-                        description: 'Practice addition and subtraction problems' 
-                    }
-                ]
-            },
-            {
-                activities: [
-                    { 
-                        title: 'Advanced Reading', 
-                        description: 'Read longer passages and identify main ideas' 
-                    },
-                    { 
-                        title: 'Grammar Exercises', 
-                        description: 'Practice proper sentence structure and punctuation' 
-                    },
-                    { 
-                        title: 'Multiplication Practice', 
-                        description: 'Solve multiplication problems up to 12x12' 
-                    }
-                ]
-            },
-            {
-                activities: [
-                    { 
-                        title: 'Creative Writing', 
-                        description: 'Write a short story using vocabulary words' 
-                    },
-                    { 
-                        title: 'Reading Comprehension Test', 
-                        description: 'Complete a reading passage with questions' 
-                    },
-                    { 
-                        title: 'Division Problems', 
-                        description: 'Solve division problems with remainders' 
-                    }
-                ]
-            }
-        ]
+        goal: '',
+        planDuration: 1,
+        weeks: [{ activities: [{ title: '', description: '' }] }]
     });
-
-    const fetchTherapistDetails = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.error("No token found");
-                return;
-            }
-            
-            const decoded = jwtDecode(token);
-            const response = await axios.get(`http://localhost:4000/ldss/theraphist/gettheraphist/${decoded.id}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            
-            if (response.data && response.data.theraphist) {
-                const therapistData = response.data.theraphist;
-                setTherapistDetails(therapistData);
-                localStorage.setItem("theraphistDetails", JSON.stringify(therapistData));
-            }
-        } catch (error) {
-            console.error("Error fetching therapist:", error);
-            // Fallback to localStorage if API fails
-            const cachedData = localStorage.getItem("theraphistDetails");
-            if (cachedData) {
-                try {
-                    const parsed = JSON.parse(cachedData);
-                    if (parsed && parsed._id) {
-                        setTherapistDetails(parsed);
-                    }
-                } catch (parseError) {
-                    console.error("Error parsing cached data:", parseError);
-                }
-            }
-        }
-    };
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const fetchLearningPlanOfStudent = async () => {
         try {
             const token = localStorage.getItem("token");
-            const therapistId = therapistDetails._id || (JSON.parse(localStorage.getItem("theraphistDetails"))?._id);
-            if (!therapistId) return;
+            const therapistId = (JSON.parse(localStorage.getItem("theraphistDetails"))?._id);
+            
+            if (!therapistId || !childId) {
+                throw new Error("Missing therapist or student ID");
+            }
 
-            const studentPlan = await axios.get(`http://localhost:4000/ldss/theraphist/getstudentplan/${therapistId}/${childId}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
+            const response = await axios.get(
+                `http://localhost:4000/ldss/theraphist/getstudentplan/${therapistId}/${childId}`, 
+                {
+                    headers: { Authorization: `Bearer ${token}` }
                 }
-            });
-            setLearningPlan(studentPlan.data.childPlan);
+            );
+            console.log(response.data.data[0]);
+
+            if (response.data?.data?.length > 0) {
+                const plan = response.data.data[0]; // Get the first plan from the array
+                
+                // Ensure all required fields exist and are properly formatted
+                const formattedPlan = {
+                    _id: plan._id,
+                    goal: plan.goal || '',
+                    planDuration: plan.planDuration || (plan.weeks ? plan.weeks.length : 1),
+                    weeks: plan.weeks?.map(week => ({
+                        _id: week._id,
+                        activities: week.activities?.map(activity => ({
+                            _id: activity._id,
+                            title: activity.title || '',
+                            description: activity.description || '',
+                            completed: activity.completed || false
+                        })) || [{ title: '', description: '' }]
+                    })) || [{ activities: [{ title: '', description: '' }] }],
+                    educatorId: plan.educatorId,
+                    therapistId: plan.therapistId,
+                    childId: plan.childId,
+                    status: plan.status,
+                    updatedStatus: plan.updatedStatus,
+                    createdAt: plan.createdAt
+                };
+                
+                setLearningPlan(formattedPlan);
+            } else {
+                // Initialize with default plan if none exists
+                setLearningPlan({
+                    goal: '',
+                    planDuration: 1,
+                    weeks: [{ activities: [{ title: '', description: '' }] }]
+                });
+            }
         } catch (error) {
             console.error("Error fetching learning plan:", error);
+            setError("Failed to load learning plan");
             toast.error("Failed to load learning plan");
+            // Initialize with default plan on error
+            setLearningPlan({
+                goal: '',
+                planDuration: 1,
+                weeks: [{ activities: [{ title: '', description: '' }] }]
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchTherapistDetails();
-        // Uncomment if using real API
-        // fetchLearningPlanOfStudent();
-    }, []);
+        const storedTherapistDetails = localStorage.getItem("therapistDetails");
+        if (storedTherapistDetails) {
+            setTherapistDetails(JSON.parse(storedTherapistDetails));
+        }
+        fetchLearningPlanOfStudent();
+    }, [childId]);
 
     const navigateToProfile = () => {
         navigate('/therapist/profile');
@@ -170,28 +135,72 @@ const TherapistEditLearningPlan = () => {
         }));
     };
 
+    const handleRemoveActivity = (weekIndex, activityIndex) => {
+        const updatedWeeks = [...learningPlan.weeks];
+        updatedWeeks[weekIndex].activities.splice(activityIndex, 1);
+        
+        // If this was the last activity in the week, add a new empty one
+        if (updatedWeeks[weekIndex].activities.length === 0) {
+            updatedWeeks[weekIndex].activities.push({ title: '', description: '' });
+        }
+        
+        setLearningPlan(prev => ({ ...prev, weeks: updatedWeeks }));
+    };
+
+    const handleRemoveWeek = (weekIndex) => {
+        if (learningPlan.weeks.length <= 1) {
+            toast.warning("You must have at least one week");
+            return;
+        }
+        
+        const updatedWeeks = [...learningPlan.weeks];
+        updatedWeeks.splice(weekIndex, 1);
+        
+        setLearningPlan(prev => ({
+            ...prev,
+            weeks: updatedWeeks,
+            planDuration: updatedWeeks.length
+        }));
+    };
+
     const handleSubmit = async () => {
-        console.log("Submitted Learning Plan:", learningPlan);
         const token = localStorage.getItem('token');
-        const therapistId = therapistDetails._id || (JSON.parse(localStorage.getItem("theraphistDetails")))?._id;
-    
-        if (!therapistId) {
-            toast.error("Therapist ID not found");
+        const therapistId = (JSON.parse(localStorage.getItem("theraphistDetails"))?._id);
+        
+        if (!therapistId || !childId) {
+            toast.error("Missing therapist or student information");
             return;
         }
 
         try {
-            const plan = await axios.put(
-                `http://localhost:4000/ldss/therapist/updateplan/${therapistId}/${childId}`, 
-                learningPlan,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
+            // Prepare the data to send (matching the expected API format)
+            const planData = {
+                _id: learningPlan._id,
+                goal: learningPlan.goal,
+                planDuration: learningPlan.planDuration,
+                weeks: learningPlan.weeks.map(week => ({
+                    _id: week._id,
+                    activities: week.activities.map(activity => ({
+                        _id: activity._id,
+                        title: activity.title,
+                        description: activity.description,
+                        completed: activity.completed || false
+                    }))
+                })),
+                educatorId: learningPlan.educatorId,
+                therapistId: learningPlan.therapistId,
+                childId: learningPlan.childId,
+                status: learningPlan.status,
+                updatedStatus: learningPlan.updatedStatus
+            };
+
+            const response = await axios.put(
+                `http://localhost:4000/ldss/theraphist/updateplan/${therapistId}/${childId}`, 
+                planData,
+                { headers: { Authorization: `Bearer ${token}` } }
             );
             
-            if (plan.data.message === "Learning plan updated successfully") {
+            if (response.data?.message === "Learning plan updated successfully") {
                 toast.success("Learning plan updated successfully");
                 navigate(`/therapist/viewlearningplan/${childId}`);
             }
@@ -205,9 +214,25 @@ const TherapistEditLearningPlan = () => {
         navigate(`/therapist/viewlearningplan/${childId}`);
     };
 
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+                <Typography color="error">{error}</Typography>
+            </Box>
+        );
+    }
+
     return (
         <>
-            <TheraphistNavbar theraphistdetails={therapistDetails} navigateToProfile={navigateToProfile} />
+            <TherapistNavbar therapistDetails={therapistDetails} navigateToProfile={navigateToProfile} />
 
             <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: "46px", background: "#DBE8FA" }}>
                 <Typography color='primary' textAlign="center" sx={{ fontSize: "18px", fontWeight: "600" }}>
@@ -239,7 +264,7 @@ const TherapistEditLearningPlan = () => {
                         <input
                             style={inputStyle}
                             name='goal'
-                            value={learningPlan.goal}
+                            value={learningPlan.goal || ''}
                             onChange={handleInputChange}
                             type='text'
                         />
@@ -249,9 +274,10 @@ const TherapistEditLearningPlan = () => {
                         <input
                             style={inputStyle}
                             name='planDuration'
-                            value={learningPlan.planDuration}
+                            value={learningPlan.planDuration || learningPlan.weeks.length}
                             onChange={handleInputChange}
                             type='number'
+                            min="1"
                         />
                     </div>
                 </Stack>
@@ -259,9 +285,21 @@ const TherapistEditLearningPlan = () => {
                 <Box sx={{ borderBottom: "1px solid #CCCCCC", width: "100%" }}></Box>
 
                 {/* Weeks and Activities */}
-                {learningPlan.weeks.map((week, weekIndex) => (
-                    <Box key={weekIndex} display="flex" flexDirection="column" gap={2} alignItems="center" sx={{ width: '100%' }}>
-                        <Typography color='primary' sx={{ fontSize: "18px", fontWeight: "600" }}>{`Week ${weekIndex + 1}`}</Typography>
+                {learningPlan.weeks?.map((week, weekIndex) => (
+                    <Box key={week._id || weekIndex} display="flex" flexDirection="column" gap={2} alignItems="center" sx={{ width: '100%' }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ width: '100%' }}>
+                            <Typography color='primary' sx={{ fontSize: "18px", fontWeight: "600" }}>{`Week ${weekIndex + 1}`}</Typography>
+                            {learningPlan.weeks.length > 1 && (
+                                <Button
+                                    variant="outlined"
+                                    color="error"
+                                    size="small"
+                                    onClick={() => handleRemoveWeek(weekIndex)}
+                                >
+                                    Remove Week
+                                </Button>
+                            )}
+                        </Box>
 
                         <Box sx={{ 
                             width: '100%',
@@ -271,17 +309,29 @@ const TherapistEditLearningPlan = () => {
                             gap: '20px'
                         }}>
                             {/* Activities */}
-                            {week.activities.map((activity, activityIndex) => (
-                                <Box key={activityIndex} sx={activityContainerStyle}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                                        Activity {activityIndex + 1}
-                                    </Typography>
+                            {week.activities?.map((activity, activityIndex) => (
+                                <Box key={activity._id || activityIndex} sx={activityContainerStyle}>
+                                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                            Activity {activityIndex + 1}
+                                        </Typography>
+                                        {week.activities.length > 1 && (
+                                            <Button
+                                                variant="text"
+                                                color="error"
+                                                size="small"
+                                                onClick={() => handleRemoveActivity(weekIndex, activityIndex)}
+                                            >
+                                                Remove
+                                            </Button>
+                                        )}
+                                    </Box>
                                     <div style={textFieldStyle}>
                                         <label>Title</label>
                                         <input
                                             style={inputStyle}
                                             name='title'
-                                            value={activity.title}
+                                            value={activity.title || ''}
                                             onChange={(e) => handleActivityChange(weekIndex, activityIndex, e)}
                                         />
                                     </div>
@@ -290,7 +340,7 @@ const TherapistEditLearningPlan = () => {
                                         <input
                                             style={{height: "60px", borderRadius: "8px", border: "1px solid #CCCCCC", padding: '8px', width: '100%'}}
                                             name='description'
-                                            value={activity.description}
+                                            value={activity.description || ''}
                                             onChange={(e) => handleActivityChange(weekIndex, activityIndex, e)}
                                         />
                                     </div>

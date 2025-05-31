@@ -10,161 +10,133 @@ import TheraphistNavbar from '../Navbar/TheraphistNavbar';
 import TherapistViewParentDetails from './Common/TherapistViewParentDetails';
 
 const TherapistAcceptedParents = () => {
-    const [useDummyData, setUseDummyData] = useState(true);
     const [therapistDetails, setTherapistDetails] = useState({});
+    const [parentRequests, setParentRequests] = useState([]);
+    const [filteredParents, setFilteredParents] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [requestDetail, setRequestDetail] = useState({});
+    const [openParent, setOpenParent] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
-
-    // Dummy data for parent requests
-    const dummyParentRequests = [
-        {
-            _id: "request1",
-            status: "accepted",
-            parentId: {
-                _id: "parent1",
-                name: "Sarah Johnson",
-                email: "sarah.johnson@example.com",
-                address: "123 Main St, Springfield, IL 62704",
-                phone: "+1 (555) 123-4567",
-                profilePic: {
-                    filename: "profile1.jpg"
-                }
-            }
-        },
-        {
-            _id: "request2",
-            status: "accepted",
-            parentId: {
-                _id: "parent2",
-                name: "Michael Brown",
-                email: "michael.brown@example.com",
-                address: "456 Oak Ave, Springfield, IL 62704",
-                phone: "+1 (555) 987-6543",
-                profilePic: {
-                    filename: "profile2.jpg"
-                }
-            }
-        }
-    ];
 
     const fetchTherapist = async () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) {
                 console.error("No token found");
+                navigate('/login');
                 return;
             }
             
             const decoded = jwtDecode(token);
+            const storedTherapist = localStorage.getItem("theraphistDetails");
             
-            const response = await axios.get(`http://localhost:4000/ldss/theraphist/gettheraphist/${decoded.id}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            
-            if (response.data && response.data.theraphist) {
-                const therapistData = response.data.theraphist;
-                
-                // Validate before storing
-                if (therapistData && therapistData._id) {
-                    try {
-                        localStorage.setItem("theraphistDetails", JSON.stringify(therapistData));
-                        setTherapistDetails(therapistData);
-                    } catch (storageError) {
-                        console.error("Failed to store in localStorage:", storageError);
-                        // Fallback to state only
-                        setTherapistDetails(therapistData);
-                    }
-                } else {
-                    console.error("Invalid therapist data structure");
-                }
+            if (storedTherapist) {
+                setTherapistDetails(JSON.parse(storedTherapist));
+            } else if (decoded.id) {
+                // If therapist details not in localStorage, fetch from API
+                const response = await axios.get(
+                    `http://localhost:4000/ldss/theraphist/${decoded.id}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setTherapistDetails(response.data.therapist);
+                localStorage.setItem("theraphistDetails", JSON.stringify(response.data.therapist));
             }
         } catch (error) {
             console.error("Error fetching therapist:", error);
-            // If API fails, check if we have cached data
-            const cachedData = localStorage.getItem("theraphistDetails");
-            if (cachedData) {
-                try {
-                    const parsed = JSON.parse(cachedData);
-                    if (parsed && parsed._id) {
-                        setTherapistDetails(parsed);
-                    }
-                } catch (parseError) {
-                    console.error("Error parsing cached data:", parseError);
-                }
-            }
+            setError("Failed to load therapist details");
         }
     };
 
-    const [parentRequest, setParentRequest] = useState([]);
     const fetchParentsRequest = async () => {
-        if (useDummyData) {
-            setParentRequest(dummyParentRequests);
-        } else {
-            try {
-                const token = localStorage.getItem("token");
-                const therapistId = therapistDetails._id;
-                const response = await axios.get(
-                    `http://localhost:4000/ldss/theraphist/parentsrequest/${therapistId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }
-                );
-                setParentRequest(response.data.request);
-            } catch (error) {
-                console.error("Failed to fetch parent requests:", error);
+        setLoading(true);
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                navigate('/login');
+                return;
             }
+            
+            const storedTherapist = localStorage.getItem("theraphistDetails");
+            if (!storedTherapist) {
+                console.error("No therapist details found");
+                return;
+            }
+            
+            const therapistId = JSON.parse(storedTherapist)._id;
+            const response = await axios.get(
+                `http://localhost:4000/ldss/theraphist/parentsrequest/${therapistId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            // Filter only accepted requests
+            const acceptedRequests = response.data.request.filter(req => req.status === "accepted");
+            setParentRequests(acceptedRequests);
+            setFilteredParents(acceptedRequests);
+        } catch (error) {
+            console.error("Failed to fetch parent requests:", error);
+            setError("Failed to load parent requests");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchParentByRequestId = async (requestId) => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.get(
+                `http://localhost:4000/ldss/theraphist/viewrequestedparent/${requestId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setRequestDetail(response.data.viewRequest);
+            handleParentOpen();
+        } catch (error) {
+            console.error("Failed to fetch parent details:", error);
+            setError("Failed to load parent details");
+        }
+    };
+
+    const handleSearch = (term) => {
+        setSearchTerm(term);
+        if (term === "") {
+            setFilteredParents(parentRequests);
+        } else {
+            const filtered = parentRequests.filter(request => {
+                // Convert all searchable fields to strings to safely use includes()
+                const name = request.parentId?.name?.toString().toLowerCase() || '';
+                const email = request.parentId?.email?.toString().toLowerCase() || '';
+                const phone = request.parentId?.phone?.toString() || '';
+                const address = request.parentId?.address?.toString().toLowerCase() || '';
+                
+                const searchLower = term.toLowerCase();
+                
+                return (
+                    name.includes(searchLower) ||
+                    email.includes(searchLower) ||
+                    phone.includes(term) || // Keep phone search as is (numbers)
+                    address.includes(searchLower)
+                );
+            });
+            setFilteredParents(filtered);
         }
     };
 
     useEffect(() => {
-        // Load therapist details from localStorage if available
-        const storedTherapist = localStorage.getItem("theraphistDetails");
-        if (storedTherapist) {
-            setTherapistDetails(JSON.parse(storedTherapist));
-        }
         fetchTherapist();
         fetchParentsRequest();
     }, []);
 
-    const navigateToProfile = () => {
-        navigate('/theraphist/profile');
-    };
-
-    // Modal state
-    const [requestDetail, setRequestDetail] = useState({});
-    const [openParent, setOpenParent] = useState(false);
     const handleParentOpen = () => setOpenParent(true);
     const handleParentClose = () => setOpenParent(false);
 
-    const fetchParentByRequestId = async (requestId) => {
-        if (useDummyData) {
-            const foundRequest = dummyParentRequests.find(req => req._id === requestId);
-            if (foundRequest) {
-                setRequestDetail(foundRequest);
-                handleParentOpen();
-            }
-        } else {
-            try {
-                const token = localStorage.getItem("token");
-                const response = await axios.get(
-                    `http://localhost:4000/ldss/theraphist/viewrequestedparent/${requestId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }
-                );
-                setRequestDetail(response.data.viewRequest);
-                handleParentOpen();
-            } catch (error) {
-                console.error("Failed to fetch parent details:", error);
-            }
-        }
+    const navigateToProfile = () => {
+        navigate('/therapist/profile');
     };
 
     return (
         <>
-            {/* Corrected prop name to match navbar component */}
-            <TheraphistNavbar theraphistdetails={therapistDetails} navigateToProfile={navigateToProfile} />
+            <TheraphistNavbar therapistdetails={therapistDetails} navigateToProfile={navigateToProfile} />
             
             <Box sx={{ background: "white", width: "100vw" }}>
                 <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: "46px", background: "#DBE8FA" }}>
@@ -175,7 +147,7 @@ const TherapistAcceptedParents = () => {
                 
                 <Box display="flex" justifyContent="space-between" alignItems="start" sx={{ mt: "30px", ml: "50px", mr: "50px" }}>
                     <Breadcrumbs aria-label="breadcrumb" separator="›">
-                        <Link style={{ fontSize: "12px", fontWeight: "500", color: "#7F7F7F", textDecoration: "none" }} to="/educator/home">
+                        <Link style={{ fontSize: "12px", fontWeight: "500", color: "#7F7F7F", textDecoration: "none" }} to="/therapist/home">
                             Home
                         </Link>
                         <Typography color="primary" sx={{ fontSize: "12px", fontWeight: "500" }}>
@@ -190,7 +162,12 @@ const TherapistAcceptedParents = () => {
                         height: "40px" 
                     }}>
                         <SearchOutlinedIcon />
-                        <input placeholder="search here" style={{ border: 0, outline: 0, height: "100%" }} />
+                        <input 
+                            placeholder="Search by name, email, phone or address" 
+                            style={{ border: 0, outline: 0, height: "100%" }} 
+                            value={searchTerm}
+                            onChange={(e) => handleSearch(e.target.value)}
+                        />
                     </Box>
                 </Box>
                 
@@ -203,26 +180,29 @@ const TherapistAcceptedParents = () => {
                     display: "flex",
                     justifyContent: "center"
                 }}>
-                    <Box sx={{
-                        display: "grid",
-                        gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
-                        gap: 3,
-                        width: "100%",
-                        maxWidth: "1200px",
-                        px: 3
-                    }}>
-                        {parentRequest.filter(request => request.status === "accepted").length === 0 ? 
-                            (
+                    {loading ? (
+                        <Typography sx={{ fontSize: "18px" }}>Loading...</Typography>
+                    ) : error ? (
+                        <Typography sx={{ fontSize: "18px", color: "error.main" }}>{error}</Typography>
+                    ) : (
+                        <Box sx={{
+                            display: "grid",
+                            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+                            gap: 3,
+                            width: "100%",
+                            maxWidth: "1200px",
+                            px: 3
+                        }}>
+                            {filteredParents.length === 0 ? (
                                 <Typography sx={{ 
                                     fontSize: "32px", 
                                     gridColumn: "1 / -1",
                                     textAlign: "center"
                                 }} color="primary">
-                                    No parents accepted yet
+                                    {searchTerm ? "No matching parents found" : "No parents accepted yet"}
                                 </Typography>
                             ) : (
-                            parentRequest.filter(request => request.status === "accepted")
-                                .map((request, index) => (   
+                                filteredParents.map((request, index) => (   
                                     <Card key={index} sx={{ 
                                         height: "197px", 
                                         borderRadius: "20px", 
@@ -247,8 +227,13 @@ const TherapistAcceptedParents = () => {
                                                         borderRadius: "10px", 
                                                         flexShrink: 0 
                                                     }}
-                                                    image={useDummyData ? image68 : `http://localhost:4000/uploads/${request.parentId.profilePic.filename}`}
+                                                    image={request.parentId.profilePic?.filename 
+                                                        ? `http://localhost:4000/uploads/${request.parentId.profilePic.filename}`
+                                                        : image68}
                                                     alt="Profile"
+                                                    onError={(e) => {
+                                                        e.target.src = image68;
+                                                    }}
                                                 />
                                                 <Box sx={{
                                                     height: "100%",
@@ -261,21 +246,21 @@ const TherapistAcceptedParents = () => {
                                                 }}>
                                                     <Box display="flex" flexDirection="column" gap={2}>
                                                         <Typography variant="h6" color="primary">
-                                                            {request.parentId.name}
+                                                            {request.parentId?.name || 'No name provided'}
                                                         </Typography>
                                                         <Typography sx={{ 
                                                             color: '#7F7F7F', 
                                                             fontSize: "13px", 
                                                             fontWeight: "500" 
                                                         }}>
-                                                            {request.parentId.address}
+                                                            {request.parentId?.email || 'No email provided'}
                                                         </Typography>
                                                         <Typography sx={{ 
                                                             color: '#7F7F7F', 
                                                             fontSize: "13px", 
                                                             fontWeight: "500" 
                                                         }}>
-                                                            {request.parentId.phone}
+                                                            {request.parentId?.phone || 'No phone provided'}
                                                         </Typography>
                                                     </Box>
                                                     <Button 
@@ -297,9 +282,10 @@ const TherapistAcceptedParents = () => {
                                             </Box>
                                         </Box>
                                     </Card>
-                                )))
-                            }
-                    </Box>
+                                ))
+                            )}
+                        </Box>
+                    )}
                 </Box>
                 
                 {/* Parent Details Modal */}

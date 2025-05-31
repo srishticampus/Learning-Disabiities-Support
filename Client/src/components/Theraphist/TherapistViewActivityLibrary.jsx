@@ -150,7 +150,7 @@ const TherapistViewActivityLibrary = () => {
   }, []);
 
   const navigateToProfile = () => {
-    navigate('/theraphist/profile');
+    navigate('/therapist/profile');
   };
 
   return (

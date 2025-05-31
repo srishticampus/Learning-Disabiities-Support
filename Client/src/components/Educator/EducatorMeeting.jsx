@@ -9,8 +9,9 @@ import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import Backdrop from '@mui/material/Backdrop';
 import { Modal, Fade } from '@mui/material';
-import AddMeeting from './Common/addMeeting';
+import AddMeeting from './Common/AddMeeting';
 import axiosInstance from '../../Api_service/baseUrl';
+import { jwtDecode } from 'jwt-decode';
 
 const EducatorMeeting = () => {
 
@@ -19,14 +20,13 @@ const EducatorMeeting = () => {
         const fetchEducator = async () => {
             const token = localStorage.getItem('token');
             const decoded = jwtDecode(token);
-            const response = await axios.get(`http://localhost:4000/ldss/educator/geteducator/${decoded.id}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            const educatorData = response.data.educator;
-            localStorage.setItem("educatorDetails", JSON.stringify(educatorData));
-            setEducatorDetails(educatorData);
+            const educatorDetails= JSON.parse(localStorage.getItem("educatorDetails"));
+            // const response = await axios.get(`http://localhost:4000/ldss/educator/geteducator/${decoded.id}`, {
+            //     headers: {
+            //         Authorization: `Bearer ${token}`,
+            //     },
+            // });
+            setEducatorDetails(educatorDetails);
         }
     
     
@@ -52,7 +52,7 @@ const EducatorMeeting = () => {
     const [meetings, setMeetings] = useState([]);
     const fetchAllMeetings = async () => {
         // In a real app, you would use the actual API call:
-        /*
+        
         const token = localStorage.getItem("token");
         const educatorId = JSON.parse(localStorage.getItem("educatorDetails"))?._id;
         try {
@@ -62,65 +62,11 @@ const EducatorMeeting = () => {
                 }
             });
             setMeetings(response.data.meetings);
+            
         } catch (error) {
             console.error("Error fetching meetings:", error);
         }
-        */
-       
-       // For demo, using dummy data with meet links:
-       setTimeout(() => {
-           setMeetings([
-               {
-                   _id: "1",
-                   meetingTitle: "Parent-Teacher Conference",
-                   date: "2023-06-15",
-                   startTime: "10:00 AM",
-                   endTime: "11:00 AM",
-                   meetLink: "https://meet.google.com/abc-def-ghi",
-                   childId: {
-                       name: "Alice Johnson",
-                       dateOfBirth: "2018-05-10",
-                       gender: "Female",
-                       parentId: {
-                           name: "Robert Johnson"
-                       }
-                   }
-               },
-               {
-                   _id: "2",
-                   meetingTitle: "Progress Review",
-                   date: "2023-06-20",
-                   startTime: "02:00 PM",
-                   endTime: "03:00 PM",
-                   meetLink: "https://meet.google.com/jkl-mno-pqr",
-                   childId: {
-                       name: "Michael Brown",
-                       dateOfBirth: "2017-11-22",
-                       gender: "Male",
-                       parentId: {
-                           name: "Sarah Brown"
-                       }
-                   }
-               },
-               {
-                   _id: "3",
-                   meetingTitle: "Behavior Discussion",
-                   date: "2023-06-25",
-                   startTime: "09:30 AM",
-                   endTime: "10:15 AM",
-                   meetLink: "https://meet.google.com/stu-vwx-yza",
-                   childId: {
-                       name: "Emma Wilson",
-                       dateOfBirth: "2019-03-15",
-                       gender: "Female",
-                       parentId: {
-                           name: "David Wilson"
-                       }
-                   }
-               }
-           ]);
-       }, 500);
-    };
+        };
     
     useEffect(() => {
         fetchAllMeetings();
@@ -133,6 +79,14 @@ const EducatorMeeting = () => {
             alert('No meeting link available for this meeting');
         }
     };
+   
+    const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${month}-${day}-${year}`;
+};
 
     return (
         <>
@@ -203,7 +157,7 @@ const EducatorMeeting = () => {
             Parent name
           </Typography>
           <Typography variant="h6" color="text.primary" sx={{ fontSize: "14px", fontWeight: "500" }}>
-            {meeting.childId.parentId?.name}
+            {meeting.parentId.name}
           </Typography>
         </Box>
       </Box>
@@ -219,8 +173,8 @@ const EducatorMeeting = () => {
             Date of birth
           </Typography>
           <Typography variant="h6" color="text.primary" sx={{ fontSize: "14px", fontWeight: "500" }}>
-            {meeting.childId.dateOfBirth}
-          </Typography>
+  {formatDate(meeting.childId.dateOfBirth)}
+</Typography>
         </Box>
       </Box>
       <Box display="flex" alignItems="center" sx={{ gap: "15px", pl: "50px" }}>
@@ -266,7 +220,7 @@ const EducatorMeeting = () => {
             Date
           </Typography>
           <Typography variant="h6" color="text.primary" sx={{ fontSize: "14px", fontWeight: "500" }}>
-            {meeting.date}
+            {formatDate(meeting.date)}
           </Typography>
         </Box>
       </Box>

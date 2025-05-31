@@ -87,7 +87,7 @@ const educatorLogin = async (req, res) => {
         if (!isMatch) {
             return res.json({ message: "Invalid Password." })
         }
-        const token = await jwt.sign({ id: educator._id }, process.env.SECRET_KEY, { expiresIn: "1hr" });
+        const token = await jwt.sign({ id: educator._id }, process.env.SECRET_KEY, { expiresIn: "4hr" });
         res.status(200).json({ message: "educator logged in successfully", token: token });
 
     } catch (error) {

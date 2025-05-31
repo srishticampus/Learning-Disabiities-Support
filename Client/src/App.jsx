@@ -102,8 +102,8 @@ const App = () => {
           <Route path='/parent/viewalleducators' element={<ParentAllEducator/>}/>
           <Route path='/parent/viewalltheraphist' element={<ParentAllTheraphist/>}/>
           <Route path='/parent/learningplan' element={<ParentLearningPlan/>}/>
-          <Route path='/parent/Theraphistlearningplan' element={<ParentTheraphistLearning/>}/>
-          <Route path='/parent/educatorlearningplan' element={<ParentEducatorLearning/>}/>
+          <Route path='/parent/therapistlearningplan/:therapistId/:childId' element={<ParentTheraphistLearning/>}/>
+          <Route path='/parent/educatorlearningplan/:educatorId/:childId' element={<ParentEducatorLearning/>}/>
           <Route path='/parent/meeting' element={<ParentMeeting/>}/>
           <Route path='/parent/activites' element={<ParentActivities/>}/>
           <Route path='/parent/chat/:id' element={<ParentChat/>}/>
@@ -149,7 +149,7 @@ const App = () => {
           <Route path='/theraphist/resetpassword/:email' element={<TheraphistRest/>} />
           <Route path='/theraphist/personalinfo' element={<TheraphistPersonal/>} />
           <Route path='/theraphist/home' element={<TheraphistHome />} />
-          <Route path='/theraphist/profile' element={<TheraphistProfile/>} />
+          <Route path='/therapist/profile' element={<TheraphistProfile/>} />
           <Route path='/theraphist/about' element={<TheraphistAbout/>} />
           <Route path='/theraphist/contact' element={<TheraphistContact/>} />
           <Route path='/therapist/allstudents' element={<TherapistAllStudents/>} />

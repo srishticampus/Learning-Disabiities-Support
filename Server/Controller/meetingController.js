@@ -1,19 +1,19 @@
 const meetingModel = require("../Models/meetingmodel");
-
-const childModel=require("../Models/childModel")
+const childModel = require("../Models/childModel");
 
 const createMeeting = async (req, res) => {
     try {
-        const { meetingTitle, date, startTime, endTime, creatorType } = req.body;
+        const { meetingTitle, date, startTime, endTime, creatorType, meetLink } = req.body;
         const creatorId = req.params.id;
         const childId = req.params.childId;
+        
         const child = await childModel.findById(childId);
         if (!child) {
             return res.status(404).json({ message: "Child not found" });
         }
 
         const parentId = child.parentId;
-        const newMeeting = await new meetingModel({
+        const newMeeting = new meetingModel({
             meetingTitle,
             date,
             startTime,
@@ -21,45 +21,53 @@ const createMeeting = async (req, res) => {
             creatorId,
             creatorType,
             childId,
-            parentId
+            parentId,
+            meetLink,
         });
+        
         const createdMeeting = await newMeeting.save();
-
-        return res.json({
-            message: "meeting added successfully",
-            createdMeeting: createdMeeting
-        })
-
+        return res.status(201).json({
+            message: "Meeting added successfully",
+            createdMeeting
+        });
 
     } catch (error) {
-        console.log(error.message);
-        res.json({
-            message: error.message
-        })
+        console.error(error);
+        res.status(500).json({
+            message: "Error creating meeting",
+            error: error.message
+        });
     }
 };
+
 const viewChildsMeeting = async (req, res) => {
     try {
         const creatorId = req.params.id;
         const childId = req.params.childId;
-        const meeting = await meetingModel.find({
+        
+        const meetings = await meetingModel.find({
             creatorId,
             childId
-        });
-        console.log(meeting);
-        if (meeting) {
-            return res.json({
-                message: "meeting found for the child",
-                meeting
-            })
+        }).sort({ date: 1, startTime: 1 });
+        
+        if (!meetings || meetings.length === 0) {
+            return res.status(404).json({
+                message: "No meetings found for this child",
+                meetings: []
+            });
         }
 
+        return res.json({
+            message: "Meetings retrieved successfully",
+            meetings
+        });
 
     } catch (error) {
-        console.log(error.message);
-        res.json({
-            message: error.message
-        })
+        console.error(error);
+        res.status(500).json({
+            message: "Error fetching meetings",
+            error: error.message
+        });
     }
 };
 
@@ -69,58 +77,96 @@ const viewAllmeetingsOfEducator = async (req, res) => {
         const meetings = await meetingModel.find({
             creatorId: educatorId,
             creatorType: "educator"
-        }).populate({
-            path: 'childId',
-            populate: {
-                path: 'parentId',
-                model: 'parent'
-            }
-        });
-        if (!meetings) {
-            return res.json({
-                message: "No meetings for educator"
-            })
-        };
-        return res.json({
-            message: "meetings fetched for the educator",
-            meetings
         })
+        .populate('childId')
+        .populate('parentId')
+        .sort({ date: 1, startTime: 1 });
+
+        if (!meetings || meetings.length === 0) {
+            return res.json({
+                message: "No meetings scheduled yet",
+                meetings: []
+            });
+        }
+
+        return res.json({
+            message: "Meetings retrieved successfully",
+            meetings
+        });
 
     } catch (error) {
-        console.log(error.message);
-        res.json({
-            message: error.message
-        })
+        console.error(error);
+        res.status(500).json({
+            message: "Error fetching meetings",
+            error: error.message
+        });
     }
 };
-const viewAllMeetingsOfParent = async (req, res) => {
+const viewAllmeetingsOfTherapist = async (req, res) => {
     try {
-        const parentId=req.params.id;
-        const meeting=await meetingModel.find({
-            parentId
-        }).populate({
-            path: 'childId',
-            populate: {
-                path: 'parentId',
-                model: 'parent'
-            }
-        });;
-        if(!meeting){
-            res.json({
-                message:"no meeting yet"
-            })
-        };
-        return res.json({
-            message:"Fetch parents meeting",
-            meeting
+        const therapistId = req.params.id;
+        const meetings = await meetingModel.find({
+            creatorId: therapistId,
+            creatorType: "theraphist"
         })
+        .populate('childId')
+        .populate('parentId')
+        .sort({ date: 1, startTime: 1 });
+
+        if (!meetings || meetings.length === 0) {
+            return res.json({
+                message: "No meetings scheduled yet",
+                meetings: []
+            });
+        }
+
+        return res.json({
+            message: "Meetings retrieved successfully",
+            meetings
+        });
 
     } catch (error) {
-        console.log(error.message);
-        res.json({
-            message: error.message
-        })
+        console.error(error);
+        res.status(500).json({
+            message: "Error fetching meetings",
+            error: error.message
+        });
+    }
+};
+
+const viewAllMeetingsOfParent = async (req, res) => {
+    try {
+        const parentId = req.params.id;
+        const meetings = await meetingModel.find({ parentId })
+            .populate('childId')
+            .populate('creatorId')
+            .sort({ date: 1, startTime: 1 });
+
+        if (!meetings || meetings.length === 0) {
+            return res.json({
+                message: "No meetings scheduled yet",
+                meetings: []
+            });
+        }
+
+        return res.json({
+            message: "Meetings retrieved successfully",
+            meetings
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error fetching meetings",
+            error: error.message
+        });
     }
 }
 
-module.exports = { createMeeting, viewChildsMeeting, viewAllmeetingsOfEducator,viewAllMeetingsOfParent }
+module.exports = { 
+    createMeeting, 
+    viewChildsMeeting, 
+    viewAllmeetingsOfEducator,
+    viewAllMeetingsOfParent,
+    viewAllmeetingsOfTherapist
+};

@@ -3,8 +3,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import Backdrop from '@mui/material/Backdrop';
 import { Box, Button, Fade, Modal, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import AddMeeting from './addMeeting';
 import axiosInstance from '../../../Api_service/baseUrl';
+import AddMeeting from './addMeeting';
 
 const Meeting = ({ openMeeting, handleMeetingClose, childId }) => {
     const styleMeeting = {
@@ -24,29 +24,6 @@ const Meeting = ({ openMeeting, handleMeetingClose, childId }) => {
     const [meeting, setMeeting] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [useDummyData, setUseDummyData] = useState(true); // Added dummy data flag
-
-    // Dummy meetings data
-    const dummyMeetings = [
-        {
-            _id: "1",
-            meetingTitle: "Therapy Progress Review",
-            date: "2023-06-15",
-            startTime: "10:00 AM",
-            endTime: "11:00 AM",
-            meetLink: "https://meet.google.com/abc-defg-hij",
-            creatorType: "therapist"
-        },
-        {
-            _id: "2",
-            meetingTitle: "Treatment Plan Discussion",
-            date: "2023-06-20",
-            startTime: "02:00 PM",
-            endTime: "03:00 PM",
-            meetLink: "https://meet.google.com/klm-nopq-rst",
-            creatorType: "therapist"
-        }
-    ];
 
     const handleAddMeetingOpen = () => {
         setAddMeetingOpen(true);
@@ -59,24 +36,33 @@ const Meeting = ({ openMeeting, handleMeetingClose, childId }) => {
     const fetchChildMeeting = async () => {
         try {
             setLoading(true);
-            
-            if (useDummyData) {
-                // Use dummy data
-                setMeeting(dummyMeetings);
-                return;
-            }
-
+            setError(null);
             const token = localStorage.getItem("token");
-            const therapistId = (JSON.parse(localStorage.getItem("therapistDetails")))._id;
-            const response = await axiosInstance.get(`/therapist/viewmeeting/${therapistId}/${childId}`, {
+            const therapistId = (JSON.parse(localStorage.getItem("theraphistDetails"))?._id);
+
+            if (!therapistId) {
+                throw new Error("Therapist not found");
+            }
+const id = JSON.parse(localStorage.getItem("theraphistDetails"))?._id;
+
+            const response = await axiosInstance.get(`/therapist/viewmeeting/${id}/${childId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
-            setMeeting(response.data.meeting || []);
+            
+            
+            // Sort meetings by date and time
+            const sortedMeetings = (response.data.meetings || []).sort((a, b) => {
+                const dateA = new Date(`${a.date}T${a.startTime}`);
+                const dateB = new Date(`${b.date}T${b.startTime}`);
+                return dateA - dateB;
+            });
+            
+            setMeeting(sortedMeetings);
         } catch (err) {
             console.error("Error fetching meetings:", err);
-            setError("Failed to load meetings");
+            setError("No meetings found.");
             setMeeting([]);
         } finally {
             setLoading(false);
@@ -90,10 +76,17 @@ const Meeting = ({ openMeeting, handleMeetingClose, childId }) => {
     }, [openMeeting, childId]);
 
     const handleJoinMeeting = (meetLink) => {
-        if (meetLink) {
-            window.open(meetLink, '_blank');
-        } else {
+        if (!meetLink) {
             alert("No meeting link provided");
+            return;
+        }
+        
+        try {
+            // Validate URL
+            new URL(meetLink);
+            window.open(meetLink, '_blank', 'noopener,noreferrer');
+        } catch (e) {
+            alert("Invalid meeting link");
         }
     };
 
@@ -138,7 +131,7 @@ const Meeting = ({ openMeeting, handleMeetingClose, childId }) => {
                                 </Box>
                             ) : error ? (
                                 <Box display="flex" justifyContent="center" alignItems="center" height={200}>
-                                    <Typography color="error">{error}</Typography>
+                                    <Typography color="primary">{error}</Typography>
                                 </Box>
                             ) : meeting && meeting.length === 0 ? (
                                 <Box>
@@ -189,12 +182,11 @@ const Meeting = ({ openMeeting, handleMeetingClose, childId }) => {
                     </Fade>
                 </Modal>
             </div>
-            <AddMeeting 
-                handleAddMeetingOpen={handleAddMeetingOpen} 
-                addMeetingopen={addMeetingopen} 
-                handleAddMeetingClose={handleAddMeetingClose} 
-                childId={childId} 
-                fetchChildMeeting={fetchChildMeeting} 
+            <AddMeeting
+                addMeetingopen={addMeetingopen}
+                handleAddMeetingClose={handleAddMeetingClose}
+                fetchAllMeetings={fetchChildMeeting}
+                childId={childId}
             />
         </>
     );

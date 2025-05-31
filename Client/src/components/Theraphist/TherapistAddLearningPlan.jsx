@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
 import axios from "axios";
 import { toast } from 'react-toastify';
-import TheraphistNavbar from '../Navbar/TheraphistNavbar';
+import TherapistNavbar from '../Navbar/TheraphistNavbar';
 
 const TherapistAddLearningPlan = () => {
     const activityContainerStyle = { 
@@ -21,7 +21,7 @@ const TherapistAddLearningPlan = () => {
 
     const { childId } = useParams();
 
-    const [therapistDetails, settherapistDetails] = useState({});
+    const [therapistDetails, setTherapistDetails] = useState({});
     const [learningPlan, setLearningPlan] = useState({
         goal: '',
         planDuration: '',
@@ -37,12 +37,13 @@ const TherapistAddLearningPlan = () => {
     });
 
     useEffect(() => {
-        const therapistDetails = localStorage.getItem("theraphistDetails");
+        const therapistDetails = localStorage.getItem("therapistDetails");
         if (therapistDetails) {
-            settherapistDetails(JSON.parse(therapistDetails));
+            setTherapistDetails(JSON.parse(therapistDetails));
         }
     }, []);
 
+    const navigate = useNavigate();
     const navigateToProfile = () => {
         navigate('/therapist/profile');
     };
@@ -72,36 +73,65 @@ const TherapistAddLearningPlan = () => {
         }));
     };
     
-    const navigate = useNavigate();
     const handleSubmit = async () => {
-        console.log("Submitted Learning Plan:", learningPlan);
-        const token = localStorage.getItem('token');
-        const therapistId = (JSON.parse(localStorage.getItem("theraphistDetails")))._id;
-        const payload = {
-            ...learningPlan,
-            therapistId: therapistId,
-            childId: childId
-        };
-
-        const plan = await axios.post(`http://localhost:4000/ldss/theraphist/addlearning`, payload, {
-            headers: {
-                Authorization: `Bearer ${token}`
+        try {
+            const token = localStorage.getItem('token');
+            const therapistDetails = JSON.parse(localStorage.getItem("theraphistDetails"));
+            const therapistId = therapistDetails._id;
+            
+            if (!therapistId) {
+                toast.error("Therapist details not found");
+                return;
             }
-        });
-        console.log(plan);
-        if (plan.data.message === "Learning plan already added for this student.") {
-            toast.error("Learning plan already added for this student");
-            navigate(`/therapist/viewlearningplan/${childId}`);
+
+            const payload = {
+                ...learningPlan,
+                therapistId: therapistId,
+                childId: childId
+            };
+
+            const response = await axios.post(
+                `http://localhost:4000/ldss/theraphist/addlearning`, 
+                payload, 
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (response.data.message === "Learning plan already exists for this student.") {
+                toast.error("Learning plan already exists for this student");
+                navigate(`/therapist/viewlearningplan/${childId}`);
+                return;
+            }
+
+            if (response.data.success) {
+                toast.success("Learning plan created successfully");
+                navigate(`/therapist/viewlearningplan/${childId}`);
+            }
+        } catch (error) {
+            console.error("Error submitting learning plan:", error);
+            if (error.response) {
+                if (error.response.status === 409) {
+                    toast.error("Learning plan already exists for this student");
+                    navigate(`/therapist/viewlearningplan/${childId}`);
+                } else {
+                    toast.error(error.response.data.message || "Failed to create learning plan");
+                }
+            } else {
+                toast.error("Network error - please try again");
+            }
         }
-        navigate(`/therapist/viewlearningplan/${childId}`);
     };
 
     return (
         <>
-<TheraphistNavbar
-          theraphistdetails={therapistDetails}
-          navigateToProfile={navigateToProfile} 
-        />
+            <TherapistNavbar 
+                therapistDetails={therapistDetails} 
+                navigateToProfile={navigateToProfile} 
+            />
+
             <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: "46px", background: "#DBE8FA" }}>
                 <Typography color='primary' textAlign="center" sx={{ fontSize: "18px", fontWeight: "600" }}>
                     Learning Plan
@@ -190,7 +220,7 @@ const TherapistAddLearningPlan = () => {
                                 </Box>
                             ))}
 
-                            {/* Add Activity Button Container - matches activity container dimensions */}
+                            {/* Add Activity Button Container */}
                             <Box sx={{
                                 ...activityContainerStyle,
                                 border: '1px dashed #CCCCCC',
@@ -237,11 +267,9 @@ const TherapistAddLearningPlan = () => {
                 >
                     Submit
                 </Button>
-                
             </Box>
-            
         </>
     );
 };
 
-export default TherapistAddLearningPlan;    
+export default TherapistAddLearningPlan;

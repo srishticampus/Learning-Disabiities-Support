@@ -10,10 +10,13 @@ import EducatorViewParentDetails from './Common/EducatorViewParentDetails';
 import Backdrop from '@mui/material/Backdrop';
 
 const EducatorParentRequest = () => {
-    const [useDummyData, setUseDummyData] = useState(true);
+    const [useDummyData, setUseDummyData] = useState(false);
     const [educator, setEducator] = useState({});
-    
-    // Dummy data
+    const [parentRequest, setParentRequest] = useState([]);
+    const [requestDetail, setRequestDetail] = useState({});
+    const [openParent, setOpenParent] = useState(false);
+    const navigate = useNavigate();
+
     const dummyEducator = {
         _id: "educator1",
         name: "John Smith",
@@ -69,7 +72,7 @@ const EducatorParentRequest = () => {
     ];
 
     const fetchEducator = async () => {
-        if (!useDummyData) {
+        if (useDummyData) {
             localStorage.setItem("educatorDetails", JSON.stringify(dummyEducator));
             setEducator(dummyEducator);
         } else {
@@ -89,43 +92,32 @@ const EducatorParentRequest = () => {
         }
     }
 
-    useEffect(() => {
-        // First try to load from localStorage
-        const storedEducator = localStorage.getItem("educatorDetails");
-        if (storedEducator) {
-            setEducator(JSON.parse(storedEducator));
-        }
-        
-        // Then fetch fresh data
-        fetchEducator();
-        fetchParentsRequest();
-    }, []);
-
-    const navigate = useNavigate();
-    const navigateToProfile = () => {
-        navigate('/educator/profile');
-    };
-    
-    const [parentRequest, setParentRequest] = useState([]);
     const fetchParentsRequest = async () => {
         if (useDummyData) {
             setParentRequest(dummyParentRequests);
         } else {
             try {
                 const token = localStorage.getItem("token");
-                const educatorId = JSON.parse(localStorage.getItem("educatorDetails"))._id;
+                const educatorId = JSON.parse(localStorage.getItem("educatorDetails"))?._id;
+                if (!educatorId) {
+                    console.error("Educator ID not found");
+                    return;
+                }
                 const request = await axios.get(`http://localhost:4000/ldss/educator/parentsrequest/${educatorId}`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
                 });
-                setParentRequest(request.data.request);
+                setParentRequest(request.data?.request || []);
+                console.log(request);
+                
             } catch (error) {
                 console.error("Error fetching parent requests:", error);
+                setParentRequest([]);
             }
         }
     };
-    
+
     const acceptParentrequest = async (requestId) => {
         if (useDummyData) {
             setParentRequest(prev => prev.map(req => 
@@ -147,7 +139,7 @@ const EducatorParentRequest = () => {
             }
         }
     };
-    
+
     const rejectParentrequest = async(requestId) => {
         if (useDummyData) {
             setParentRequest(prev => prev.filter(req => req._id !== requestId));
@@ -167,13 +159,10 @@ const EducatorParentRequest = () => {
             }
         }
     };
-    
-    // Modal state
-    const [requestDetail, setRequestDetail] = useState({});
-    const [openParent, setOpenParent] = useState(false);
+
     const handleParentOpen = () => setOpenParent(true);
     const handleParentClose = () => setOpenParent(false);
-    
+
     const fetchParentByRequestId = async(requestId) => {
         if (useDummyData) {
             const foundRequest = dummyParentRequests.find(req => req._id === requestId);
@@ -189,14 +178,29 @@ const EducatorParentRequest = () => {
                         Authorization: `Bearer ${token}`
                     }
                 });
-                setRequestDetail(parent.data.viewRequest);
+                setRequestDetail(parent.data?.viewRequest || {});
                 handleParentOpen();
             } catch (error) {
                 console.error("Error fetching parent details:", error);
             }
         }
     }
-    
+
+    const navigateToProfile = () => {
+        navigate('/educator/profile');
+    };
+
+    useEffect(() => {
+        const storedEducator = localStorage.getItem("educatorDetails");
+        if (storedEducator) {
+            setEducator(JSON.parse(storedEducator));
+        }
+        fetchEducator();
+        fetchParentsRequest();
+    }, []);
+
+    const pendingRequests = Array.isArray(parentRequest) ? parentRequest.filter(request => request?.status === "pending") : [];
+
     return (
         <>
             <EducatorNavbar educatorDetails={educator} navigateToProfile={navigateToProfile} />
@@ -234,15 +238,14 @@ const EducatorParentRequest = () => {
                         maxWidth: "1200px",
                         px: 3
                     }}>
-                        {parentRequest.filter(request => request.status === "pending").length === 0 ? 
+                        {pendingRequests.length === 0 ? 
                             (<Typography sx={{ 
                                 fontSize: "32px", 
                                 gridColumn: "1 / -1",
                                 textAlign: "center"
                             }} color='primary'>No request found</Typography>)
                             :
-                            (parentRequest.filter(request => request.status === "pending")
-                            .map((request, index) => (   
+                            (pendingRequests.map((request, index) => (   
                                 <Card key={index} sx={{ 
                                     height: "205px", 
                                     borderRadius: "20px", 
@@ -267,7 +270,7 @@ const EducatorParentRequest = () => {
                                                     borderRadius: "10px", 
                                                     flexShrink: 0 
                                                 }}
-                                                image={useDummyData ? image68 : `http://localhost:4000/uploads/${request.parentId.profilePic.filename}`}
+                                                image={useDummyData ? image68 : request.parentId?.profilePic?.filename ? `http://localhost:4000/uploads/${request.parentId.profilePic.filename}` : image68}
                                                 alt="Profile"
                                             />
                                             <Box sx={{
@@ -281,7 +284,7 @@ const EducatorParentRequest = () => {
                                             }}>
                                                 <Box display="flex" flexDirection="column" gap={1}>
                                                     <Typography variant="h6" color="primary">
-                                                        {request.parentId.name}
+                                                        {request.parentId?.name || "Unknown Parent"}
                                                     </Typography>
                                                     <Typography sx={{ 
                                                         color: '#7F7F7F', 
@@ -292,7 +295,7 @@ const EducatorParentRequest = () => {
                                                         textOverflow: "ellipsis",
                                                         maxWidth: "100%" 
                                                     }}>
-                                                        {request.parentId.address}
+                                                        {request.parentId?.address || "Address not available"}
                                                     </Typography>
 
                                                     <Typography sx={{ 
@@ -300,7 +303,7 @@ const EducatorParentRequest = () => {
                                                         fontSize: "13px", 
                                                         fontWeight: "500" 
                                                     }}>
-                                                        {request.parentId.phone}
+                                                        {request.parentId?.phone || "Phone not available"}
                                                     </Typography>
                                                     <Button 
                                                         onClick={() => fetchParentByRequestId(request._id)}

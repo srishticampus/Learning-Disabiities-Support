@@ -3,7 +3,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import Backdrop from '@mui/material/Backdrop';
 import { Box, Button, Fade, Modal, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import AddMeeting from './addMeeting';
+import AddMeeting from './AddMeeting';
 import axiosInstance from '../../../Api_service/baseUrl';
 
 const Meeting = ({ openMeeting, handleMeetingClose, childId }) => {
@@ -36,18 +36,35 @@ const Meeting = ({ openMeeting, handleMeetingClose, childId }) => {
     const fetchChildMeeting = async () => {
         try {
             setLoading(true);
+            setError(null);
             const token = localStorage.getItem("token");
-            const educatorId = (JSON.parse(localStorage.getItem("educatorDetails")))._id;
-            const response = await axiosInstance.get(`/educator/viewmeeting/${educatorId}/${childId}`, {
+            const educatorId = (JSON.parse(localStorage.getItem("educatorDetails"))?._id);
+            
+            if (!educatorId) {
+                throw new Error("Educator not found");
+            }
+const id = JSON.parse(localStorage.getItem("educatorDetails"))?._id;
+console.log("Educator ID:", id, "Child ID:", childId);
+
+            const response = await axiosInstance.get(`/educator/viewmeeting/${id}/${childId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
-            console.log(response.data.meeting);
-            setMeeting(response.data.meeting || []);
+            console.log(response.data.meetings);
+            
+            
+            // Sort meetings by date and time
+            const sortedMeetings = (response.data.meetings || []).sort((a, b) => {
+                const dateA = new Date(`${a.date}T${a.startTime}`);
+                const dateB = new Date(`${b.date}T${b.startTime}`);
+                return dateA - dateB;
+            });
+            
+            setMeeting(sortedMeetings);
         } catch (err) {
             console.error("Error fetching meetings:", err);
-            setError("Failed to load meetings");
+            setError("No meetings found.");
             setMeeting([]);
         } finally {
             setLoading(false);
@@ -61,10 +78,17 @@ const Meeting = ({ openMeeting, handleMeetingClose, childId }) => {
     }, [openMeeting, childId]);
 
     const handleJoinMeeting = (meetLink) => {
-        if (meetLink) {
-            window.open(meetLink, '_blank');
-        } else {
+        if (!meetLink) {
             alert("No meeting link provided");
+            return;
+        }
+        
+        try {
+            // Validate URL
+            new URL(meetLink);
+            window.open(meetLink, '_blank', 'noopener,noreferrer');
+        } catch (e) {
+            alert("Invalid meeting link");
         }
     };
 
@@ -109,7 +133,7 @@ const Meeting = ({ openMeeting, handleMeetingClose, childId }) => {
                                 </Box>
                             ) : error ? (
                                 <Box display="flex" justifyContent="center" alignItems="center" height={200}>
-                                    <Typography color="error">{error}</Typography>
+                                    <Typography color="primary">{error}</Typography>
                                 </Box>
                             ) : meeting && meeting.length === 0 ? (
                                 <Box>
@@ -161,11 +185,10 @@ const Meeting = ({ openMeeting, handleMeetingClose, childId }) => {
                 </Modal>
             </div>
             <AddMeeting 
-                handleAddMeetingOpen={handleAddMeetingOpen} 
-                addMeetingopen={addMeetingopen} 
-                handleAddMeetingClose={handleAddMeetingClose} 
-                childId={childId} 
-                fetchChildMeeting={fetchChildMeeting} 
+                addMeetingopen={addMeetingopen}
+                handleAddMeetingClose={handleAddMeetingClose}
+                fetchAllMeetings={fetchChildMeeting}
+                childId={childId}
             />
         </>
     );

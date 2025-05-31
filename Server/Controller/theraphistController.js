@@ -3,6 +3,9 @@ const bcrypt=require("bcryptjs");
 const multer=require("multer");
 const jwt = require("jsonwebtoken");
 const theraphistModel = require("../Models/theraphistModel");
+const requestModel = require("../Models/requestModel");
+const childModel = require("../Models/childModel");
+
 
 const storage=multer.diskStorage({
     destination:(req,file,cb)=>{
@@ -78,7 +81,7 @@ const theraphistLogin=async (req,res)=>{
         if(!isMatch){
             return res.json({message:"Invalid Password."})
         }
-        const token=await jwt.sign({id:theraphist._id},process.env.SECRET_KEY,{expiresIn:"1hr"});
+        const token=await jwt.sign({id:theraphist._id},process.env.SECRET_KEY,{expiresIn:"4hr"});
         res.status(200).json({message:"theraphist logged in successfully",token:token});
         
     } catch (error) {
@@ -247,6 +250,102 @@ const addTheraphistPersonal=async(req,res)=>{
             message:error.message
         })
     }
- }
-module.exports={uploadProfilePic,uploadCertification, theraphistRegister,theraphistLogin,theraphistForgotPassword,theraphistResetPassword,getTheraphistById,editTheraphistById,getAllTheraphists,addTheraphistPersonal,theraphistRequestAccept,adminDeleteTheraphist};
+ };
+ const getTherapistRequests = async (req, res) => {
+  try {
+    const therapistId = req.params.id;
+    const request = await requestModel.find({
+      recipientId: therapistId,
+      recipientRole: "theraphist",
+    }).populate("parentId");
+    res.json({ success: true, request });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ message: error.message });
+  }
+};
+
+const acceptParentRequest = async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const updatedRequest = await requestModel.findByIdAndUpdate(
+      requestId,
+      { status: "accepted" },
+      { new: true }
+    );
+    if (!updatedRequest) {
+      return res.json({ message: "Request not found" });
+    }
+    res.json({ message: "Request accepted", updatedRequest });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ message: error.message });
+  }
+};
+
+const rejectParentRequest = async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const deletedRequest = await requestModel.findByIdAndDelete(requestId);
+    if (!deletedRequest) {
+      return res.json({ message: "Cannot delete request" });
+    }
+    res.json({ message: "Request rejected", deletedRequest });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ message: error.message });
+  }
+};
+
+const viewRequestById = async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const viewRequest = await requestModel.findById(requestId).populate("parentId");
+    if (!viewRequest) {
+      return res.json({ message: "No request found" });
+    }
+    res.json({ message: "Request found", viewRequest });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ message: error.message });
+  }
+};
+
+const viewAllApprovedParentsByTherapist = async (req, res) => {
+  try {
+    const therapistId = req.params.id;
+    const acceptedRequests = await requestModel.find({
+      recipientId: therapistId,
+      recipientRole: "theraphist",
+      status: "accepted",
+    }).populate("parentId");
+
+    res.json({ message: "Fetched accepted parents", parents: acceptedRequests });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ message: error.message });
+  }
+};
+
+const viewAllChildsOfApprovedParents = async (req, res) => {
+  try {
+    const therapistId = req.params.id;
+    const approvedRequests = await requestModel.find({
+      recipientId: therapistId,
+      recipientRole: "theraphist",
+      status: "accepted",
+    });
+
+    const parentIds = approvedRequests.map((req) => req.parentId);
+    const children = await childModel.find({
+      parentId: { $in: parentIds },
+    }).populate("parentId", "name");
+
+    res.json({ message: "Fetched children of approved parents", children });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ message: error.message });
+  }
+};
+module.exports={uploadProfilePic,uploadCertification, theraphistRegister,getTherapistRequests,acceptParentRequest,rejectParentRequest,viewRequestById,viewAllApprovedParentsByTherapist,viewAllChildsOfApprovedParents,theraphistLogin,theraphistForgotPassword,theraphistResetPassword,getTheraphistById,editTheraphistById,getAllTheraphists,addTheraphistPersonal,theraphistRequestAccept,adminDeleteTheraphist};
 

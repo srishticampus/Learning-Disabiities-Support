@@ -1,6 +1,8 @@
 const Activity = require('../Models/activityModel');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+const { act } = require('react');
 
 // Multer setup
 const storage = multer.diskStorage({
@@ -53,6 +55,8 @@ const activityController = {
   async getAllActivities(req, res) {
     try {
       const activities = await Activity.find();
+            console.log(activities);
+
       res.status(200).json({ activities });
     } catch (error) {
       console.error('Error fetching activities:', error);
@@ -65,6 +69,7 @@ const activityController = {
     try {
       const { parentId } = req.params;
       const activities = await Activity.find({ parentId });
+      
       res.status(200).json({ activities });
     } catch (error) {
       console.error('Error in getActivitiesByParent:', error);
@@ -75,6 +80,7 @@ const activityController = {
   try {
     const { id } = req.params;
     const activity = await Activity.findById(id);
+    
     if (!activity) {
       return res.status(404).json({ message: 'Activity not found' });
     }
@@ -126,6 +132,33 @@ async editActivity(req, res) {
       res.status(500).json({ message: 'Internal server error' });
     }
   },
+  // Delete an activity
+  async deleteActivity(req, res) {
+    try {
+      const { id } = req.params;
+      const activity = await Activity.findById(id);
+
+      if (!activity) {
+        return res.status(404).json({ message: 'Activity not found' });
+      }
+
+      // Optional: Remove the uploaded image file if exists
+      if (activity.activityPhoto) {
+        const filePath = path.join('uploads', activity.activityPhoto);
+        fs.unlink(filePath, (err) => {
+          if (err) {
+            console.warn('Image not deleted:', err.message);
+          }
+        });
+      }
+
+      await Activity.findByIdAndDelete(id);
+      res.status(200).json({ message: 'Activity deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting activity:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
 };
 
 module.exports = activityController;

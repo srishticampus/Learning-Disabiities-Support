@@ -144,7 +144,7 @@ const navigate=useNavigate();
         if (addTheraphistInfo.data.message === "theraphist personal details added successfully.") {
             toast.success("Theraphist personal details added successfully.");
             localStorage.setItem("theraphistDetails", JSON.stringify(addTheraphistInfo.data.theraphist));
-            navigate("/theraphist/profile");
+            navigate("/therapist/profile");
         }
     };
     return (

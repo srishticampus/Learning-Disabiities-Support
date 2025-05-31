@@ -175,7 +175,7 @@ const TherapistChat = () => {
     <>
       <TheraphistNavbar 
         theraphistdetails={therapistDetails} 
-        navigateToProfile={() => navigate('/theraphist/profile')} 
+        navigateToProfile={() => navigate('/therapist/profile')} 
       />
       <Box sx={{ 
         background: '#F6F7F9', 

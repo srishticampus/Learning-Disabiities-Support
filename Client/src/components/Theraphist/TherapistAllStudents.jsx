@@ -25,10 +25,12 @@ import Meeting from './Common/Meeting';
 import ViewStudentActivity from './Common/ViewStudentActivity';
 
 const TherapistAllStudents = () => {
-    const [therapistDetails, setTherapistDetails] = useState({});
+    const [therapistDetails, setTherapistDetails] = useState(null);
     const [allChildren, setAllChildren] = useState([]);
-    const [useDummyData, setUseDummyData] = useState(true);
-    const [loading, setLoading] = useState(false);
+    const [filteredChildren, setFilteredChildren] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [useDummyData, setUseDummyData] = useState(false);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     // Initialize therapist details
@@ -51,105 +53,104 @@ const TherapistAllStudents = () => {
             if (response.data && response.data.theraphist) {
                 const therapistData = response.data.theraphist;
                 
-                // Validate before storing
                 if (therapistData && therapistData._id) {
-                    try {
-                        localStorage.setItem("theraphistDetails", JSON.stringify(therapistData));
-                        setTherapistDetails(therapistData);
-                    } catch (storageError) {
-                        console.error("Failed to store in localStorage:", storageError);
-                        // Fallback to state only
-                        setTherapistDetails(therapistData);
-                    }
-                } else {
-                    console.error("Invalid therapist data structure");
+                    localStorage.setItem("theraphistDetails", JSON.stringify(therapistData));
+                    setTherapistDetails(therapistData);
+                    fetchAllChildren(therapistData._id); // Fetch children after therapist details are loaded
                 }
             }
         } catch (error) {
             console.error("Error fetching therapist:", error);
-            // If API fails, check if we have cached data
             const cachedData = localStorage.getItem("theraphistDetails");
             if (cachedData) {
                 try {
                     const parsed = JSON.parse(cachedData);
                     if (parsed && parsed._id) {
                         setTherapistDetails(parsed);
+                        fetchAllChildren(parsed._id);
                     }
                 } catch (parseError) {
                     console.error("Error parsing cached data:", parseError);
+                    setLoading(false);
                 }
+            } else {
+                setLoading(false);
             }
         }
     };
 
     useEffect(() => {
-        const storedTherapist = localStorage.getItem("theraphistDetails");
-        if (storedTherapist) {
-            setTherapistDetails(JSON.parse(storedTherapist));
-        }
         fetchTherapist();
-        fetchAllChildren();
     }, []);
 
     const navigateToProfile = () => {
         navigate('/therapist/profile');
     };
 
-    const fetchAllChildren = async () => {
+    const fetchAllChildren = async (therapistId) => {
         setLoading(true);
         try {
             if (useDummyData) {
-                // Dummy data
-                const dummyChildren = [
-                    {
-                        _id: 'child1',
-                        name: 'John Doe',
-                        parentId: { 
-                            _id: '1', 
-                            name: 'Jane Doe',
-                            email: 'jane.doe@example.com'
-                        },
-                        schoolName: 'Springfield Elementary',
-                        dateOfBirth: '2012-04-23',
-                        gender: 'Male',
-                        description: 'John is a curious student who needs speech therapy.',
-                        progress: 35,
-                        weeks: 8,
-                        hasLearningPlan: true
-                    },
-                    {
-                        _id: 'child2',
-                        name: 'Emily Smith',
-                        parentId: { 
-                            _id: '2', 
-                            name: 'Robert Smith',
-                            email: 'robert.smith@example.com'
-                        },
-                        schoolName: 'Riverdale High',
-                        dateOfBirth: '2013-06-15',
-                        gender: 'Female',
-                        description: 'Emily is working on occupational therapy goals.',
-                        progress: 75,
-                        weeks: 15,
-                        hasLearningPlan: false
-                    }
-                ];
+                // Keep your dummy data as is
+                const dummyChildren = [];
                 setAllChildren(dummyChildren);
+                setFilteredChildren(dummyChildren);
             } else {
                 const token = localStorage.getItem("token");
-                const therapistId = therapistDetails._id;
+                const therapistDetails = JSON.parse(localStorage.getItem("theraphistDetails"));
+                
                 const response = await axios.get(
-                    `http://localhost:4000/ldss/therapist/getchildrenofallapprovedparents/${therapistId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
+                    `http://localhost:4000/ldss/theraphist/getchildrenofallapprovedparents/${therapistDetails._id}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
                 );
-                setAllChildren(response.data.children);
+                
+                // Map through children and add hasLearningPlan property
+                const childrenWithPlanStatus = await Promise.all(
+                    response.data.children.map(async (child) => {
+                        try {
+                            const therapistDetails = JSON.parse(localStorage.getItem("theraphistDetails"));
+                            const planResponse = await axios.get(
+                                `http://localhost:4000/ldss/theraphist/getstudentplan/${therapistDetails._id}/${child._id}`,
+                                { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                            return {
+                                ...child,
+                                hasLearningPlan: planResponse.data.data && planResponse.data.data.length > 0
+                            };
+                        } catch (error) {
+                            console.error(`Error checking learning plan for child ${child._id}:`, error);
+                            return {
+                                ...child,
+                                hasLearningPlan: false
+                            };
+                        }
+                    })
+                );
+                
+                setAllChildren(childrenWithPlanStatus);
+                setFilteredChildren(childrenWithPlanStatus);
             }
         } catch (error) {
             console.error("Failed to fetch children:", error);
+            setAllChildren([]);
+            setFilteredChildren([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Handle search functionality
+    const handleSearch = (term) => {
+        setSearchTerm(term);
+        if (term === '') {
+            setFilteredChildren(allChildren);
+        } else {
+            const filtered = allChildren.filter(child => 
+                child.name.toLowerCase().includes(term.toLowerCase()) ||
+                (child.parentId?.name && child.parentId.name.toLowerCase().includes(term.toLowerCase())) ||
+                (child.schoolName && child.schoolName.toLowerCase().includes(term.toLowerCase()))
+            );
+            setFilteredChildren(filtered);
         }
     };
 
@@ -187,11 +188,32 @@ const TherapistAllStudents = () => {
 
     const handleLearningPlanClick = (childId, hasLearningPlan) => {
         if (hasLearningPlan) {
+            // Navigate to view learning plan (which will have edit option)
             navigate(`/therapist/viewlearningplan/${childId}`);
         } else {
+            // Navigate to add new learning plan
             navigate(`/therapist/addlearningplan/${childId}`);
         }
     };
+
+    // Format date for display
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString();
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    if (!therapistDetails) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <Typography>Loading therapist information...</Typography>
+            </Box>
+        );
+    }
 
     return (
         <>
@@ -248,7 +270,9 @@ const TherapistAllStudents = () => {
                                 outline: 0, 
                                 height: "100%",
                                 width: "200px"
-                            }} 
+                            }}
+                            value={searchTerm}
+                            onChange={(e) => handleSearch(e.target.value)}
                         />
                     </Box>
                 </Box>
@@ -267,9 +291,9 @@ const TherapistAllStudents = () => {
                         pb: "50px",
                         justifyContent: "center",
                     }}>
-                        {allChildren.length > 0 ? (
-                            allChildren.map((child, index) => (
-                                <Grid item xs={12} md={6} key={index} sx={{ height: "480px" }}>
+                        {filteredChildren.length > 0 ? (
+                            filteredChildren.map((child, index) => (
+                                <Grid item key={index} xs={12} sm={6} sx={{ height: "480px" }}>
                                     {/* Student Card */}
                                     <Box display="flex" flexDirection="column" alignItems="start" sx={{ 
                                         p: "30px", 
@@ -342,7 +366,7 @@ const TherapistAllStudents = () => {
                                                             fontSize: "14px", 
                                                             fontWeight: "500" 
                                                         }} color='primary'>
-                                                            {child.parentId.name}
+                                                            {child.parentId?.name || 'N/A'}
                                                         </Typography>
                                                     </Box>
                                                 </Box>
@@ -360,7 +384,7 @@ const TherapistAllStudents = () => {
                                                             fontSize: "14px", 
                                                             fontWeight: "500" 
                                                         }} color='primary'>
-                                                            {child.schoolName}
+                                                            {child.schoolName || 'N/A'}
                                                         </Typography>
                                                     </Box>
                                                 </Box>
@@ -384,7 +408,7 @@ const TherapistAllStudents = () => {
                                                             fontSize: "14px", 
                                                             fontWeight: "500" 
                                                         }} color='primary'>
-                                                            {child.dateOfBirth}
+                                                            {formatDate(child.dateOfBirth)}
                                                         </Typography>
                                                     </Box>
                                                 </Box>
@@ -402,7 +426,7 @@ const TherapistAllStudents = () => {
                                                             fontSize: "14px", 
                                                             fontWeight: "500" 
                                                         }} color='primary'>
-                                                            {child.gender}
+                                                            {child.gender || 'N/A'}
                                                         </Typography>
                                                     </Box>
                                                 </Box>
@@ -422,7 +446,7 @@ const TherapistAllStudents = () => {
                                                 fontWeight: "500",
                                                 lineHeight: "1.5"
                                             }} color='primary'>
-                                                {child.description}
+                                                {child.description || 'No description available'}
                                             </Typography>
                                         </Box>
 
@@ -439,7 +463,7 @@ const TherapistAllStudents = () => {
                                                     fontSize: "14px", 
                                                     fontWeight: "500" 
                                                 }} color='secondary'>
-                                                    {child.weeks} Weeks
+                                                    {child.weeks || 0} Weeks
                                                 </Typography>
                                             </Box>
                                             
@@ -453,7 +477,7 @@ const TherapistAllStudents = () => {
                                             }}>
                                                 <LinearProgress
                                                     variant="determinate"
-                                                    value={child.progress}
+                                                    value={child.progress || 0}
                                                     sx={{
                                                         height: "100%",
                                                         borderRadius: "25px",
@@ -462,14 +486,14 @@ const TherapistAllStudents = () => {
                                                             backgroundColor: '#1967D2',
                                                             borderRadius: "25px"
                                                         },
-                                                        width: `${child.progress}%`,
+                                                        width: `${child.progress || 0}%`,
                                                     }}
                                                 />
                                             </Box>
                                         </Box>
 
                                         {/* Action Buttons */}
-                                        <Box display="flex" justifyContent="space-between" alignItems="center" width="100%" mt={2}>
+                                        <Box display="flex" justifyContent="center" alignItems="center" width="100%" mt={2}>
                                             <Button 
                                                 onClick={() => handleMeetingOpen(child._id)} 
                                                 variant='contained' 
@@ -484,21 +508,6 @@ const TherapistAllStudents = () => {
                                             >
                                                 Meeting
                                             </Button>
-                                            
-                                            <Button 
-                                                onClick={() => handleActivityOpen(child._id)} 
-                                                variant='contained' 
-                                                color='secondary' 
-                                                sx={{ 
-                                                    borderRadius: "25px", 
-                                                    height: "45px", 
-                                                    width: '48%', 
-                                                    fontSize: "14px", 
-                                                    fontWeight: "500" 
-                                                }}
-                                            >
-                                                Activities
-                                            </Button>
                                         </Box>
                                     </Box>
                                 </Grid>
@@ -511,7 +520,7 @@ const TherapistAllStudents = () => {
                                 height: "200px" 
                             }}>
                                 <Typography variant="h6" color="textSecondary">
-                                    No students found
+                                    {searchTerm ? 'No matching students found' : 'No students found'}
                                 </Typography>
                             </Grid>
                         )}

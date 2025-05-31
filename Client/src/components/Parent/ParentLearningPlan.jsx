@@ -47,27 +47,79 @@ const ParentLearningPlan = () => {
 
     const handleRatingSubmit = (rating) => {
         console.log(`Rating submitted for ${ratingState.professionalType} of child ${ratingState.childId}:`, rating);
-        // Here you would typically send the rating to your backend
-        // axios.post('/api/ratings', {
-        //   childId: ratingState.childId,
-        //   professionalType: ratingState.professionalType,
-        //   rating
-        // });
         handleRatingClose();
     };
 
     // fetch all child of parent
     const [allchild, setAllChild] = useState([]);
+    const [educators, setEducators] = useState({}); // {childId: educatorDetails}
+    const [therapists, setTherapists] = useState({}); // {childId: therapistDetails}
+    
     const fetchAllChildOfParent = async () => {
         const token = localStorage.getItem("token");
         const parentId = (JSON.parse(localStorage.getItem("parentdetails"))?._id);
-        const allChild = await axios.get(`http://localhost:4000/ldss/parent/getallchildofparent/${parentId}`, {
-            headers: {
-                Authorization: `Bearer ${token}`
+        
+        try {
+            // Fetch all children
+            const allChild = await axios.get(`http://localhost:4000/ldss/parent/getallchildofparent/${parentId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            
+            setAllChild(allChild.data.child);
+            
+            // Fetch educators for parent
+            try {
+                const educatorRes = await axios.get(`http://localhost:4000/ldss/parent/getacceptededucator/${parentId}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                
+                
+                // Create a mapping of educators
+                const educatorsData = {};
+                if (educatorRes.data && educatorRes.data.acceptedEducators && educatorRes.data.acceptedEducators.length > 0) {
+                    // For simplicity, we'll associate the first educator with all children
+                    // Adjust this logic if you need to map specific educators to specific children
+                    allChild.data.child.forEach(child => {
+                        educatorsData[child._id] = educatorRes.data.acceptedEducators[0].recipientId;
+                    });
+                }
+                
+                setEducators(educatorsData);
+            } catch (error) {
+                console.error(`Error fetching educator:`, error);
             }
-        });
-        console.log(allChild.data.child);
-        setAllChild(allChild.data.child);
+
+            // Fetch therapists for parent
+            try {
+                const therapistRes = await axios.get(`http://localhost:4000/ldss/parent/getacceptedtherapist/${parentId}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                
+                
+                // Create a mapping of therapists
+                const therapistsData = {};
+                if (therapistRes.data && therapistRes.data.acceptedTherapists && therapistRes.data.acceptedTherapists.length > 0) {
+                    // For simplicity, we'll associate the first therapist with all children
+                    // Adjust this logic if you need to map specific therapists to specific children
+                    allChild.data.child.forEach(child => {
+                        therapistsData[child._id] = therapistRes.data.acceptedTherapists[0].recipientId;
+                    });
+                }
+                
+                setTherapists(therapistsData);
+            } catch (error) {
+                console.error(`Error fetching therapist:`, error);
+            }
+
+        } catch (error) {
+            console.error("Error fetching children:", error);
+        }
     };
     
     useEffect(() => {
@@ -108,6 +160,8 @@ const ParentLearningPlan = () => {
 
                 <Grid sx={{ pt: "10px", pl: "50px", pr: "50px", width: "100%" }} container spacing={2}>
                     {allchild.map((child, index) => {
+                        const educator = educators[child._id];
+                        const therapist = therapists[child._id];
                         return (
                             <Grid key={index} item xs={12} md={6} width={"49%"} sx={{ height: "470px" }}>
                                 <Box display={"flex"} flexDirection={"column"} alignItems={"start"} sx={{ p: "20px 30px", height: "90%", background: "#F6F7F9", borderRadius: "25px", gap: "20px", width: "100%" }}>
@@ -165,7 +219,9 @@ const ParentLearningPlan = () => {
                                         {/* Educator Section */}
                                         <Box display={'flex'} flexDirection={'column'} width={"100%"} p={3}>
                                             <Box width={"100%"} display={'flex'} alignItems={'center'} justifyContent={'space-around'}>
-                                                <Typography variant='p' color='secondary' sx={{ fontSize: "18px", fontWeight: "600", mt: "10px" }}>Educator</Typography>
+                                                <Typography variant='p' color='secondary' sx={{ fontSize: "18px", fontWeight: "600", mt: "10px" }}>
+                                                    {educator ? `${educator.name}` : 'Educator'}
+                                                </Typography>
                                                 <Button 
                                                     onClick={() => handleRatingOpen(child._id, 'educator')} 
                                                     startIcon={<AddIcon />} 
@@ -177,7 +233,7 @@ const ParentLearningPlan = () => {
                                                 </Button>
                                             </Box>
                                             <Typography variant='p' color='primary' sx={{ fontSize: "14px" }}>Complete Learning plan</Typography>
-                                            <Link to={`/parent/educatorlearningplan/`}>
+                                            <Link to={educator ? `/parent/educatorlearningplan/${educator._id}/${child._id}` : '#'}>
                                                 <Button variant='contained' color='secondary' sx={{ borderRadius: "25px", marginTop: "20px", height: "45px", width: '227px', padding: '10px 35px', fontSize: "14px", fontWeight: "500" }}>Learning plan</Button>
                                             </Link>
                                         </Box>
@@ -187,7 +243,9 @@ const ParentLearningPlan = () => {
                                         {/* Therapist Section */}
                                         <Box display={'flex'} flexDirection={'column'} width={"100%"} p={3}>
                                             <Box width={"100%"} display={'flex'} alignItems={'center'} justifyContent={'space-around'}>
-                                                <Typography variant='p' color='secondary' sx={{ fontSize: "18px", fontWeight: "600", mt: "10px" }}>Therapist</Typography>
+                                                <Typography variant='p' color='secondary' sx={{ fontSize: "18px", fontWeight: "600", mt: "10px" }}>
+                                                    {therapist ? `${therapist.name}` : 'Therapist'}
+                                                </Typography>
                                                 <Button 
                                                     onClick={() => handleRatingOpen(child._id, 'therapist')} 
                                                     startIcon={<AddIcon />} 
@@ -199,7 +257,7 @@ const ParentLearningPlan = () => {
                                                 </Button>
                                             </Box>
                                             <Typography variant='p' color='primary' sx={{ fontSize: "14px" }}>Complete Learning plan</Typography>
-                                            <Link to={`/parent/Theraphistlearningplan`}>
+                                            <Link to={therapist ? `/parent/therapistlearningplan/${therapist._id}/${child._id}` : '#'}>
                                                 <Button variant='contained' color='secondary' sx={{ borderRadius: "25px", marginTop: "20px", height: "45px", width: '227px', padding: '10px 35px', fontSize: "14px", fontWeight: "500" }}>Learning plan</Button>
                                             </Link>
                                         </Box>

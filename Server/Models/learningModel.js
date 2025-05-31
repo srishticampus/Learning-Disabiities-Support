@@ -41,7 +41,6 @@ const learningSchema = mongoose.Schema({
     childId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'child',
-        unique: true,
         default: null
     },
     createdAt: {
@@ -56,7 +55,7 @@ const learningSchema = mongoose.Schema({
     updatedStatus: {
         type: Date,
         default: Date.now()
-    }
+    },
 });
 
 module.exports = mongoose.model("learning plans", learningSchema);

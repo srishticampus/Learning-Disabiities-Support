@@ -1,11 +1,12 @@
 import { Box, Button, Modal, Typography } from '@mui/material';
 import React, { useState } from 'react'
 import CloseIcon from '@mui/icons-material/Close';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import axiosInstance from '../../../Api_service/baseUrl';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom'; // Add this import
 
-const AddMeeting = ({ handleAddMeetingClose, addMeetingopen, fetchAllMeetings }) => {
+const AddMeeting = ({ handleAddMeetingClose, addMeetingopen, fetchAllMeetings, childId }) => {
+    const navigate = useNavigate(); // Initialize the navigate function
     
     const textFieldStyle = { height: "65px", width: "360px", display: "flex", flexDirection: "column", justifyContent: "start", position: "relative" };
     const styleAddMeeting = {
@@ -46,20 +47,28 @@ const AddMeeting = ({ handleAddMeetingClose, addMeetingopen, fetchAllMeetings })
             return;
         }
 
-        // In a real app, you would use the actual API call:
-        /*
+        // Validate time
+        if (data.startTime >= data.endTime) {
+            toast.error("End time must be after start time");
+            return;
+        }
+
         const token = localStorage.getItem("token");
         const educatorId = JSON.parse(localStorage.getItem("educatorDetails"))?._id;
         
+        if (!educatorId || !childId) {
+            toast.error("Missing required parameters");
+            return;
+        }
+
         try {
-            const newMeeting = await axiosInstance.post(`/educator/addmeeting/${educatorId}`, data, {
+            const response = await axiosInstance.post(`/educator/addmeeting/${educatorId}/${childId}`, data, {
                 headers: {
-                    authorization: `Bearer ${token}`
+                    Authorization: `Bearer ${token}`
                 }
             });
             
-            if (newMeeting.data.message === "meeting added successfully") {
-                toast.success("Meeting created");
+            if (response.data.message === "Meeting added successfully") {
                 setData({
                     meetingTitle: "",
                     date: "",
@@ -70,25 +79,16 @@ const AddMeeting = ({ handleAddMeetingClose, addMeetingopen, fetchAllMeetings })
                 });
                 handleAddMeetingClose();
                 fetchAllMeetings();
+                navigate('/educator/allstudents'); // Add this line to redirect
+            } else {
+                                toast.success("Meeting created successfully");
+
+                console.log(response.data.message || "Error creating meeting");
             }
         } catch (error) {
-            toast.error("Error creating meeting");
-            console.error(error);
+            console.error("Meeting creation error:", error);
+            toast.error(error.response?.data?.message || "Error creating meeting");
         }
-        */
-       
-       // For demo purposes
-       toast.success("Meeting created (demo)");
-       setData({
-           meetingTitle: "",
-           date: "",
-           startTime: "",
-           endTime: "",
-           meetLink: "",
-           creatorType: "educator"
-       });
-       handleAddMeetingClose();
-       fetchAllMeetings();
     }
 
     return (
@@ -130,6 +130,7 @@ const AddMeeting = ({ handleAddMeetingClose, addMeetingopen, fetchAllMeetings })
                                 value={data.date}
                                 type='date'
                                 required
+                                min={new Date().toISOString().split('T')[0]} // Restrict to future dates
                             />
                         </div>
                     </Box>
@@ -144,7 +145,6 @@ const AddMeeting = ({ handleAddMeetingClose, addMeetingopen, fetchAllMeetings })
                                 type='time'
                                 required
                             />
-                            
                         </div>
                         <div style={{ height: "65px", width: "170px", display: "flex", flexDirection: "column", justifyContent: "start", position: "relative" }}>
                             <label>End time</label>
@@ -156,7 +156,6 @@ const AddMeeting = ({ handleAddMeetingClose, addMeetingopen, fetchAllMeetings })
                                 type='time'
                                 required
                             />
-                            
                         </div>
                     </Box>
                     <Box>

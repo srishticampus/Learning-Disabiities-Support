@@ -7,7 +7,7 @@
 
     const EducatorViewLearningPlan = () => {
         const [educatorDetails, setEducatorDetails] = useState({});
-        const [useDummyData, setUseDummyData] = useState(true); // Toggle for dummy data
+        const [useDummyData, setUseDummyData] = useState(false); // Toggle for dummy data
         
         useEffect(() => {
             const educatorDetails = localStorage.getItem("educatorDetails");
@@ -99,7 +99,8 @@
                             headers: { Authorization: `Bearer ${token}` }
                         }
                     );
-                    setStudentsPlan(studentPlan.data.childPlan);
+                    
+                    setStudentsPlan(studentPlan.data.data);
                 } catch (error) {
                     console.error("Failed to fetch learning plan:", error);
                 }

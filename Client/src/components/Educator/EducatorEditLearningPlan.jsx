@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import EducatorNavbar from '../Navbar/EducatorNavbar';
-import { Box, Breadcrumbs, Button, Grid, Stack, Typography } from '@mui/material';
+import { Box, Breadcrumbs, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
 import axios from "axios";
@@ -24,82 +24,86 @@ const EducatorEditLearningPlan = () => {
 
     const [educatorDetails, setEducatorDetails] = useState({});
     const [learningPlan, setLearningPlan] = useState({
-        goal: 'Improve reading comprehension and math skills',
-        planDuration: 3,
-        weeks: [
-            {
-                activities: [
-                    { 
-                        title: 'Reading Practice', 
-                        description: 'Read short stories and answer comprehension questions' 
-                    },
-                    { 
-                        title: 'Vocabulary Building', 
-                        description: 'Learn 10 new words with definitions and usage' 
-                    },
-                    { 
-                        title: 'Basic Math Drills', 
-                        description: 'Practice addition and subtraction problems' 
-                    }
-                ]
-            },
-            {
-                activities: [
-                    { 
-                        title: 'Advanced Reading', 
-                        description: 'Read longer passages and identify main ideas' 
-                    },
-                    { 
-                        title: 'Grammar Exercises', 
-                        description: 'Practice proper sentence structure and punctuation' 
-                    },
-                    { 
-                        title: 'Multiplication Practice', 
-                        description: 'Solve multiplication problems up to 12x12' 
-                    }
-                ]
-            },
-            {
-                activities: [
-                    { 
-                        title: 'Creative Writing', 
-                        description: 'Write a short story using vocabulary words' 
-                    },
-                    { 
-                        title: 'Reading Comprehension Test', 
-                        description: 'Complete a reading passage with questions' 
-                    },
-                    { 
-                        title: 'Division Problems', 
-                        description: 'Solve division problems with remainders' 
-                    }
-                ]
-            }
-        ]
+        goal: '',
+        planDuration: 1,
+        weeks: [{ activities: [{ title: '', description: '' }] }]
     });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Commented out API call section - kept for reference
-    /*
     const fetchLearningPlanOfStudent = async () => {
-        const token = localStorage.getItem("token");
-        const educatorId = (JSON.parse(localStorage.getItem("educatorDetails")))._id;
-        const studentPlan = await axios.get(`http://localhost:4000/ldss/educator/getstudentplan/${educatorId}/${childId}`, {
-            headers: {
-                Authorization: `Bearer ${token}`
+        try {
+            const token = localStorage.getItem("token");
+            const educatorId = (JSON.parse(localStorage.getItem("educatorDetails"))?._id);
+            
+            if (!educatorId || !childId) {
+                throw new Error("Missing educator or student ID");
             }
-        });
-        setLearningPlan(studentPlan.data.childPlan);
+
+            const response = await axios.get(
+                `http://localhost:4000/ldss/educator/getstudentplan/${educatorId}/${childId}`, 
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+            console.log(response.data.data[0]);
+
+            if (response.data?.data?.length > 0) {
+                const plan = response.data.data[0]; // Get the first plan from the array
+                
+                // Ensure all required fields exist and are properly formatted
+                const formattedPlan = {
+                    _id: plan._id,
+                    goal: plan.goal || '',
+                    planDuration: plan.planDuration || (plan.weeks ? plan.weeks.length : 1),
+                    weeks: plan.weeks?.map(week => ({
+                        _id: week._id,
+                        activities: week.activities?.map(activity => ({
+                            _id: activity._id,
+                            title: activity.title || '',
+                            description: activity.description || '',
+                            completed: activity.completed || false
+                        })) || [{ title: '', description: '' }]
+                    })) || [{ activities: [{ title: '', description: '' }] }],
+                    educatorId: plan.educatorId,
+                    therapistId: plan.therapistId,
+                    childId: plan.childId,
+                    status: plan.status,
+                    updatedStatus: plan.updatedStatus,
+                    createdAt: plan.createdAt
+                };
+                
+                setLearningPlan(formattedPlan);
+            } else {
+                // Initialize with default plan if none exists
+                setLearningPlan({
+                    goal: '',
+                    planDuration: 1,
+                    weeks: [{ activities: [{ title: '', description: '' }] }]
+                });
+            }
+        } catch (error) {
+            console.error("Error fetching learning plan:", error);
+            setError("Failed to load learning plan");
+            toast.error("Failed to load learning plan");
+            // Initialize with default plan on error
+            setLearningPlan({
+                goal: '',
+                planDuration: 1,
+                weeks: [{ activities: [{ title: '', description: '' }] }]
+            });
+        } finally {
+            setLoading(false);
+        }
     };
-    */
 
     useEffect(() => {
-        const educatorDetails = localStorage.getItem("educatorDetails");
-        if (educatorDetails) {
-            setEducatorDetails(JSON.parse(educatorDetails));
+        const storedEducatorDetails = localStorage.getItem("educatorDetails");
+        if (storedEducatorDetails) {
+            setEducatorDetails(JSON.parse(storedEducatorDetails));
         }
-        // Uncomment if using real API
-        // fetchLearningPlanOfStudent();
-    }, []);
+        fetchLearningPlanOfStudent();
+    }, [childId]);
 
     const navigateToProfile = () => {
         navigate('/educator/profile');
@@ -131,23 +135,72 @@ const EducatorEditLearningPlan = () => {
         }));
     };
 
+    const handleRemoveActivity = (weekIndex, activityIndex) => {
+        const updatedWeeks = [...learningPlan.weeks];
+        updatedWeeks[weekIndex].activities.splice(activityIndex, 1);
+        
+        // If this was the last activity in the week, add a new empty one
+        if (updatedWeeks[weekIndex].activities.length === 0) {
+            updatedWeeks[weekIndex].activities.push({ title: '', description: '' });
+        }
+        
+        setLearningPlan(prev => ({ ...prev, weeks: updatedWeeks }));
+    };
+
+    const handleRemoveWeek = (weekIndex) => {
+        if (learningPlan.weeks.length <= 1) {
+            toast.warning("You must have at least one week");
+            return;
+        }
+        
+        const updatedWeeks = [...learningPlan.weeks];
+        updatedWeeks.splice(weekIndex, 1);
+        
+        setLearningPlan(prev => ({
+            ...prev,
+            weeks: updatedWeeks,
+            planDuration: updatedWeeks.length
+        }));
+    };
+
     const handleSubmit = async () => {
-        console.log("Submitted Learning Plan:", learningPlan);
         const token = localStorage.getItem('token');
-        const educatorId = (JSON.parse(localStorage.getItem("educatorDetails")))._id;
-    
+        const educatorId = (JSON.parse(localStorage.getItem("educatorDetails"))?._id);
+        
+        if (!educatorId || !childId) {
+            toast.error("Missing educator or student information");
+            return;
+        }
+
         try {
-            const plan = await axios.put(
+            // Prepare the data to send (matching the expected API format)
+            const planData = {
+                _id: learningPlan._id,
+                goal: learningPlan.goal,
+                planDuration: learningPlan.planDuration,
+                weeks: learningPlan.weeks.map(week => ({
+                    _id: week._id,
+                    activities: week.activities.map(activity => ({
+                        _id: activity._id,
+                        title: activity.title,
+                        description: activity.description,
+                        completed: activity.completed || false
+                    }))
+                })),
+                educatorId: learningPlan.educatorId,
+                therapistId: learningPlan.therapistId,
+                childId: learningPlan.childId,
+                status: learningPlan.status,
+                updatedStatus: learningPlan.updatedStatus
+            };
+
+            const response = await axios.put(
                 `http://localhost:4000/ldss/educator/updateplan/${educatorId}/${childId}`, 
-                learningPlan,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
+                planData,
+                { headers: { Authorization: `Bearer ${token}` } }
             );
             
-            if (plan.data.message === "Learning plan updated successfully") {
+            if (response.data?.message === "Learning plan updated successfully") {
                 toast.success("Learning plan updated successfully");
                 navigate(`/educator/viewlearningplan/${childId}`);
             }
@@ -160,6 +213,22 @@ const EducatorEditLearningPlan = () => {
     const handleCancel = () => {
         navigate(`/educator/viewlearningplan/${childId}`);
     };
+
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+                <Typography color="error">{error}</Typography>
+            </Box>
+        );
+    }
 
     return (
         <>
@@ -195,7 +264,7 @@ const EducatorEditLearningPlan = () => {
                         <input
                             style={inputStyle}
                             name='goal'
-                            value={learningPlan.goal}
+                            value={learningPlan.goal || ''}
                             onChange={handleInputChange}
                             type='text'
                         />
@@ -205,9 +274,10 @@ const EducatorEditLearningPlan = () => {
                         <input
                             style={inputStyle}
                             name='planDuration'
-                            value={learningPlan.planDuration}
+                            value={learningPlan.planDuration || learningPlan.weeks.length}
                             onChange={handleInputChange}
                             type='number'
+                            min="1"
                         />
                     </div>
                 </Stack>
@@ -215,9 +285,21 @@ const EducatorEditLearningPlan = () => {
                 <Box sx={{ borderBottom: "1px solid #CCCCCC", width: "100%" }}></Box>
 
                 {/* Weeks and Activities */}
-                {learningPlan.weeks.map((week, weekIndex) => (
-                    <Box key={weekIndex} display="flex" flexDirection="column" gap={2} alignItems="center" sx={{ width: '100%' }}>
-                        <Typography color='primary' sx={{ fontSize: "18px", fontWeight: "600" }}>{`Week ${weekIndex + 1}`}</Typography>
+                {learningPlan.weeks?.map((week, weekIndex) => (
+                    <Box key={week._id || weekIndex} display="flex" flexDirection="column" gap={2} alignItems="center" sx={{ width: '100%' }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ width: '100%' }}>
+                            <Typography color='primary' sx={{ fontSize: "18px", fontWeight: "600" }}>{`Week ${weekIndex + 1}`}</Typography>
+                            {learningPlan.weeks.length > 1 && (
+                                <Button
+                                    variant="outlined"
+                                    color="error"
+                                    size="small"
+                                    onClick={() => handleRemoveWeek(weekIndex)}
+                                >
+                                    Remove Week
+                                </Button>
+                            )}
+                        </Box>
 
                         <Box sx={{ 
                             width: '100%',
@@ -227,17 +309,29 @@ const EducatorEditLearningPlan = () => {
                             gap: '20px'
                         }}>
                             {/* Activities */}
-                            {week.activities.map((activity, activityIndex) => (
-                                <Box key={activityIndex} sx={activityContainerStyle}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                                        Activity {activityIndex + 1}
-                                    </Typography>
+                            {week.activities?.map((activity, activityIndex) => (
+                                <Box key={activity._id || activityIndex} sx={activityContainerStyle}>
+                                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                            Activity {activityIndex + 1}
+                                        </Typography>
+                                        {week.activities.length > 1 && (
+                                            <Button
+                                                variant="text"
+                                                color="error"
+                                                size="small"
+                                                onClick={() => handleRemoveActivity(weekIndex, activityIndex)}
+                                            >
+                                                Remove
+                                            </Button>
+                                        )}
+                                    </Box>
                                     <div style={textFieldStyle}>
                                         <label>Title</label>
                                         <input
                                             style={inputStyle}
                                             name='title'
-                                            value={activity.title}
+                                            value={activity.title || ''}
                                             onChange={(e) => handleActivityChange(weekIndex, activityIndex, e)}
                                         />
                                     </div>
@@ -246,7 +340,7 @@ const EducatorEditLearningPlan = () => {
                                         <input
                                             style={{height: "60px", borderRadius: "8px", border: "1px solid #CCCCCC", padding: '8px', width: '100%'}}
                                             name='description'
-                                            value={activity.description}
+                                            value={activity.description || ''}
                                             onChange={(e) => handleActivityChange(weekIndex, activityIndex, e)}
                                         />
                                     </div>

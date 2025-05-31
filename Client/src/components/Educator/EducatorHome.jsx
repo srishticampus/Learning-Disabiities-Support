@@ -35,7 +35,7 @@ const EducatorHome = () => {
     const homebg = {
         backgroundColor: "#F6F7F9"
     }
-    const [useDummyData, setUseDummyData] = useState(true);
+    const [useDummyData, setUseDummyData] = useState(false);
 
     const [educatorDetails, setEducatorDetails] = useState({});
     const fetchEducator = async () => {
