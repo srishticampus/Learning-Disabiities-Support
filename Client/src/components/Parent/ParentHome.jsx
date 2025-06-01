@@ -42,6 +42,7 @@ import MailOutlinedIcon from '@mui/icons-material/MailOutlined';
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
 import PhoneEnabledOutlinedIcon from '@mui/icons-material/PhoneEnabledOutlined';
 import BorderColorOutlinedIcon from '@mui/icons-material/BorderColorOutlined';
+import { baseUrl } from '../../baseUrl';
 
 const ParentHome = () => {
     const homebg = {
@@ -58,7 +59,7 @@ const ParentHome = () => {
     const fetchUser=async()=>{
         const token = localStorage.getItem('token');
         const decoded = jwtDecode(token);
-        const parent=await axios.get(`http://localhost:4000/ldss/parent/getparent/${decoded.id}`,{
+        const parent=await axios.get(`${baseUrl}parent/getparent/${decoded.id}`,{
             headers: {
               Authorization: `Bearer ${token}`,
             },

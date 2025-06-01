@@ -17,6 +17,7 @@ import background from "../../assets/Frame 12.png";
 import profileFrame from "../../assets/profileFrame.png";
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import UploadIcon from '@mui/icons-material/Upload';
+import { baseUrl } from '../../baseUrl';
 
 const EducatorProfile = () => {
     const profilebg = {
@@ -59,7 +60,12 @@ const EducatorProfile = () => {
     });
 
     // Personal Info State
+    // Personal Info State
     const [personalData, setPersonalData] = useState({
+        educationalQualification: "",
+        yearsOfExperience: "",
+        languages: "",
+        availability: "",
         educationalQualification: "",
         yearsOfExperience: "",
         languages: "",
@@ -101,7 +107,7 @@ const EducatorProfile = () => {
         if (localStorage.getItem("educatorDetails") == null) {
             navigate("/");
         }
-    });
+    }, [navigate]);
 
     // Basic Info Handlers
     const handleDataChange = (e) => {
@@ -223,56 +229,64 @@ const EducatorProfile = () => {
 
     // Submit Handlers
     const handleBasicInfoSubmit = async (e) => {
+        e.preventDefault();
         const isValid = basicInfoValidation();
         if (!isValid) {
             return;
         }
-        e.preventDefault();
         
         const formData = new FormData();
         formData.append('name', data.name);
         formData.append('email', data.email);
         formData.append('address', data.address);
         formData.append('phone', data.phone);
-        formData.append('profilePic', data.profilePic);
+        if (data.profilePic) {
+            formData.append('profilePic', data.profilePic);
+        }
 
-        const token = localStorage.getItem("token");
-        const updated = await axios.post(
-            `http://localhost:4000/ldss/educator/updateeducator/${educatorDetails._id}`, 
-            formData, 
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            }
-        );
-
-        if (updated.data.message === "educator updated successfully.") {
-            toast.success("Educator updated successfully.")
-            
-            const res = await axios.get(
-                `http://localhost:4000/ldss/educator/geteducator/${educatorDetails._id}`, 
+        try {
+            const token = localStorage.getItem("token");
+            const updated = await axios.post(
+                `${baseUrl}educator/updateeducator/${educatorDetails._id}`, 
+                formData, 
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
                     },
                 }
             );
-            
-            localStorage.setItem("educatorDetails", JSON.stringify(res.data.educator));
-            setEducatorDetails(res.data.educator);
-            setEditOpen(false);
-        } else {
-            toast.error("Error in updating educator profile")
+
+            if (updated.data.message === "educator updated successfully.") {
+                toast.success("Educator updated successfully.");
+                
+                const res = await axios.get(
+                    `${baseUrl}educator/geteducator/${educatorDetails._id}`, 
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+                
+                localStorage.setItem("educatorDetails", JSON.stringify(res.data.educator));
+                setEducatorDetails(res.data.educator);
+                setEditOpen(false);
+            } else {
+                toast.error("Error in updating educator profile");
+            }
+        } catch (error) {
+            toast.error("Error updating profile");
+            console.error(error);
         }
-    }
+    };
 
     const handlePersonalInfoSubmit = async (e) => {
+        e.preventDefault();
         const isValid = personalInfoValidation();
         if (!isValid) {
             return;
         }
-        e.preventDefault();
         
         const formData = new FormData();
         formData.append("educationalQualification", personalData.educationalQualification);
@@ -282,36 +296,44 @@ const EducatorProfile = () => {
         if (personalData.certification) {
             formData.append("certification", personalData.certification);
         }
+        if (personalData.certification) {
+            formData.append("certification", personalData.certification);
+        }
 
-        const token = localStorage.getItem("token");
-        const updated = await axios.post(
-            `http://localhost:4000/ldss/educator/addpersonal/${educatorDetails._id}`, 
-            formData, 
-            {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    Authorization: `Bearer ${token}`,
-                }
-            }
-        );
-
-        if (updated.data.message === "educator personal details added successfully.") {
-            toast.success("Educator personal details updated successfully.");
-            
-            const res = await axios.get(
-                `http://localhost:4000/ldss/educator/geteducator/${educatorDetails._id}`, 
+        try {
+            const token = localStorage.getItem("token");
+            const updated = await axios.post(
+                `${baseUrl}educator/addpersonal/${educatorDetails._id}`, 
+                formData, 
                 {
                     headers: {
+                        'Content-Type': 'multipart/form-data',
                         Authorization: `Bearer ${token}`,
-                    },
+                    }
                 }
             );
-            
-            localStorage.setItem("educatorDetails", JSON.stringify(res.data.educator));
-            setEducatorDetails(res.data.educator);
-            setPersonalEditOpen(false);
-        } else {
-            toast.error("Error in updating educator personal details")
+
+            if (updated.data.message === "educator personal details added successfully.") {
+                toast.success("Educator personal details updated successfully.");
+                
+                const res = await axios.get(
+                    `${baseUrl}educator/geteducator/${educatorDetails._id}`, 
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+                
+                localStorage.setItem("educatorDetails", JSON.stringify(res.data.educator));
+                setEducatorDetails(res.data.educator);
+                setPersonalEditOpen(false);
+            } else {
+                toast.error("Error in updating educator personal details");
+            }
+        } catch (error) {
+            toast.error("Error updating personal details");
+            console.error(error);
         }
     };
 
@@ -320,6 +342,8 @@ const EducatorProfile = () => {
     const handleClose = () => setOpen(false);
 
     const handleEditOpen = () => {
+        if (!educatorDetails) return;
+        
         setData({
             name: educatorDetails.name || "",
             email: educatorDetails.email || "",
@@ -328,13 +352,16 @@ const EducatorProfile = () => {
             profilePic: null,
         });
         setImagePreview(educatorDetails?.profilePic?.filename
-            ? `http://localhost:4000/uploads/${educatorDetails.profilePic.filename}`
+            ? `${baseUrl}uploads/${educatorDetails.profilePic.filename}`
             : null);
         setEditOpen(true);
-    }
+    };
+
     const handleEditClose = () => setEditOpen(false);
 
     const handlePersonalEditOpen = () => {
+        if (!educatorDetails) return;
+        
         setPersonalData({
             educationalQualification: educatorDetails.educationalQualification || "",
             yearsOfExperience: educatorDetails.yearsOfExperience || "",
@@ -343,17 +370,22 @@ const EducatorProfile = () => {
             certification: null,
         });
         setCertificationPreview(educatorDetails?.certification?.filename
-            ? `http://localhost:4000/uploads/${educatorDetails.certification.filename}`
+            ? `${baseUrl}uploads/${educatorDetails.certification.filename}`
             : null);
         setPersonalEditOpen(true);
-    }
+    };
+
     const handlePersonalEditClose = () => setPersonalEditOpen(false);
 
     const handleLogOut = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('educatorDetails');
         navigate('/educator/login');
-        toast.success("you logged out");
+        toast.success("You have been logged out");
+    };
+
+    if (!educatorDetails) {
+        return <div>Loading...</div>;
     }
 
     return (
@@ -382,10 +414,10 @@ const EducatorProfile = () => {
                             </Box>
                             <hr />
                             <Box display={"flex"} alignItems={"center"} justifyContent={"center"} flexDirection={"column"}>
-                                <Typography color='primary' sx={{ fontSize: "12px", fontWeight: '500' }} variant='p'>Are you sure you want to log out ? </Typography>
+                                <Typography color='primary' sx={{ fontSize: "12px", fontWeight: '500' }} variant='p'>Are you sure you want to log out?</Typography>
                                 <Box display={"flex"} alignItems={"center"} justifyContent={"center"} sx={{ gap: "10px" }}>
-                                    <Button variant='outlined' color='secondary' sx={{ borderRadius: "25px", marginTop: "20px", height: "40px", width: '100px', padding: '10px 35px' }} onClick={handleLogOut}>yes</Button>
-                                    <Button variant='contained' color='secondary' sx={{ borderRadius: "25px", marginTop: "20px", height: "40px", width: '100px', padding: '10px 35px' }} onClick={handleClose}>no</Button>
+                                    <Button variant='outlined' color='secondary' sx={{ borderRadius: "25px", marginTop: "20px", height: "40px", width: '100px', padding: '10px 35px' }} onClick={handleLogOut}>Yes</Button>
+                                    <Button variant='contained' color='secondary' sx={{ borderRadius: "25px", marginTop: "20px", height: "40px", width: '100px', padding: '10px 35px' }} onClick={handleClose}>No</Button>
                                 </Box>
                             </Box>
                         </Box>
@@ -527,6 +559,10 @@ const EducatorProfile = () => {
                                                 <option value="Master's in Education">Master's in Education</option>
                                                 <option value="PhD in Education">PhD in Education</option>
                                                 <option value="Diploma in Education">Diploma in Education</option>
+                                                <option value="Bachelor's in Education">Bachelor's in Education</option>
+                                                <option value="Master's in Education">Master's in Education</option>
+                                                <option value="PhD in Education">PhD in Education</option>
+                                                <option value="Diploma in Education">Diploma in Education</option>
                                             </select>
                                             {personalError.educationalQualification && <span style={{ color: 'red', fontSize: '12px' }}>{personalError.educationalQualification}</span>}
                                         </div>
@@ -554,6 +590,7 @@ const EducatorProfile = () => {
                                             >
                                                 <option value="">Select</option>
                                                 <option value="English">English</option>
+                                                <option value="Tamil">Tamil</option>
                                                 <option value="Tamil">Tamil</option>
                                                 <option value="Hindi">Hindi</option>
                                                 <option value="Telugu">Telugu</option>
@@ -635,12 +672,18 @@ const EducatorProfile = () => {
                 <Box display={"flex"} justifyContent={"center"} alignItems={"center"} sx={{ height: "46px", background: "#DBE8FA" }}>
                     <Typography color='primary' textAlign={"center"} sx={{ fontSize: "18px", fontWeight: "600" }}>Profile</Typography>
                 </Box>
-                {!educatorDetails.languages && <Link to='/educator/personalinfo' >
-                    <Button variant="contained" color='secondary' sx={{
-                        borderRadius: "15px", mt
-                            : "10px", p: "10px 20px", width: "100%"
-                    }}>Add personal details</Button>
-                </Link>}
+                {!educatorDetails.languages && (
+                    <Link to='/educator/personalinfo'>
+                        <Button variant="contained" color='secondary' sx={{
+                            borderRadius: "15px", 
+                            mt: "10px", 
+                            p: "10px 20px", 
+                            width: "100%"
+                        }}>
+                            Add personal details
+                        </Button>
+                    </Link>
+                )}
                 <Box display={"flex"} justifyContent={"start"} alignItems={"start"} flexDirection={"column"} sx={{ mt: "20px", ml: "50px", mr: "50px", height: '320px' }}>
                     <Breadcrumbs aria-label="breadcrumb" separator="›">
                         <Link style={{ fontSize: "12px", fontWeight: "500", color: "#7F7F7F", textDecoration: "none" }} underline="hover" to="/educator/home">
@@ -651,34 +694,31 @@ const EducatorProfile = () => {
 
                     <Box display={"flex"} justifyContent={"space-between"} alignItems={"center"} sx={{ height: "260px", background: '#F6F7F9', borderRadius: "20px", width: "100%", padding: "0px 60px" }}>
                         <Box display={"flex"} justifyContent={"center"} alignItems={"center"} sx={{ height: "180px", gap: "70px" }}>
-                            {
-                                educatorDetails.profilePic?.filename ? (
-                                    <Avatar sx={{ height: "100%", width: "180px" }}
-                                        src={`http://localhost:4000/uploads/${educatorDetails?.profilePic?.filename}`} alt={educatorDetails?.name}
-                                    />
-                                ) :
-                                    (
-                                        <Avatar sx={{ height: "100%", width: "180px" }}>
-                                            {educatorDetails?.name?.charAt(0)}
-                                        </Avatar>
-                                    )
-                            }
+                            {educatorDetails.profilePic?.filename ? (
+                                <Avatar sx={{ height: "100%", width: "180px" }}
+                                    src={`${baseUrl}uploads/${educatorDetails.profilePic.filename}`} 
+                                    alt={educatorDetails.name}
+                                />
+                            ) : (
+                                <Avatar sx={{ height: "100%", width: "180px" }}>
+                                    {educatorDetails.name?.charAt(0)}
+                                </Avatar>
+                            )}
                             <Box display={"flex"} justifyContent={"center"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "40px" }} >
-                                {educatorDetails.name && <Typography color='primary' sx={{ fontSize: "32px", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "20px" }} onClick={handleEditOpen}>{educatorDetails.name}
-                                    <BorderColorOutlinedIcon />
-                                </Typography>}
+                                {educatorDetails.name && (
+                                    <Typography color='primary' sx={{ fontSize: "32px", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "20px" }} onClick={handleEditOpen}>
+                                        {educatorDetails.name}
+                                        <BorderColorOutlinedIcon />
+                                    </Typography>
+                                )}
                                 <Box display={"flex"} justifyContent={"center"} alignItems={"center"} sx={{ gap: "100px" }}>
                                     <Box display={"flex"} justifyContent={"start"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "20px" }}>
-
                                         {educatorDetails.name && <Typography> <PersonOutlinedIcon /> {educatorDetails.name}</Typography>}
                                         {educatorDetails.email && <Typography> <MailOutlinedIcon /> {educatorDetails.email}</Typography>}
                                     </Box>
-                                    <Box display={"flex"} justifyContent={"start"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "20px", borderLeft: "1px solid #CCCCCC", ml: "50px", pl: "40px" }} >
-
+                                    <Box display={"flex"} justifyContent={"start"} alignItems={"start"} flexDirection={"column"} sx={{ gap: "20px", borderLeft: "1px solid #CCCCCC", ml: "50px", pl: "40px" }}>
                                         {educatorDetails.address && <Typography> <LocationOnOutlinedIcon /> {educatorDetails.address}</Typography>}
-                                        {
-                                            educatorDetails.phone && <Typography> <PhoneEnabledOutlinedIcon /> {educatorDetails.phone}</Typography>
-                                        }
+                                        {educatorDetails.phone && <Typography> <PhoneEnabledOutlinedIcon /> {educatorDetails.phone}</Typography>}
                                     </Box>
                                 </Box>
                             </Box>
@@ -743,4 +783,4 @@ const EducatorProfile = () => {
     )
 }
 
-export default EducatorProfile
+export default EducatorProfile;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+
 import { 
   Box, 
   Button, 
@@ -8,6 +8,8 @@ import {
   Typography, 
   styled 
 } from '@mui/material';
+import React, { useEffect, useState } from 'react'
+
 import PhoneIcon from '@mui/icons-material/Phone';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import LocationOnIcon from '@mui/icons-material/LocationOn';

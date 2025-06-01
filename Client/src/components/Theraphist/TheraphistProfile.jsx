@@ -16,6 +16,7 @@ import axios from 'axios';
 import background from "../../assets/Frame 12.png";
 import profileFrame from "../../assets/profileFrame.png";
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import { baseUrl } from '../../baseUrl';
 
 const TheraphistProfile = () => {
     const profilebg = {
@@ -270,7 +271,7 @@ const TheraphistProfile = () => {
         formData.append('profilePic', data.profilePic);
 
         const token = localStorage.getItem("token");
-        const updated = await axios.post(`http://localhost:4000/ldss/theraphist/updatetheraphist/${theraphistdetails._id}`,formData, {
+        const updated = await axios.post(`${baseUrl}theraphist/updatetheraphist/${theraphistdetails._id}`,formData, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
@@ -315,7 +316,7 @@ const TheraphistProfile = () => {
             profilePic: null,
         });
         setImagePreview(theraphistdetails?.profilePic?.filename 
-            ? `http://localhost:4000/uploads/${theraphistdetails?.profilePic?.filename}` 
+            ? `${baseUrl}uploads/${theraphistdetails?.profilePic?.filename}` 
             : null);
         setEditOpen(true);
     }

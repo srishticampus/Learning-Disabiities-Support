@@ -85,6 +85,8 @@ router.post("/educator/addmeeting/:id/:childId", protectedRoute.protectedRoute, 
 router.get("/educator/viewmeeting/:id/:childId", protectedRoute.protectedRoute, meetingController.viewChildsMeeting);
 router.get("/educator/viewmeeting/:id", protectedRoute.protectedRoute, meetingController.viewAllmeetingsOfEducator);
 
+router.post("/admin/login", adminController.adminLogin);
+
 /* ===================== THERAPHIST ===================== */
 router.post("/theraphist/registration", theraphistController.uploadProfilePic, theraphistController.theraphistRegister);
 router.post("/theraphist/login", theraphistController.theraphistLogin);
@@ -110,6 +112,59 @@ router.delete("/theraphist/deleteplan/:id", protectedRoute.protectedRoute, learn
 router.post("/request/sendrequest", protectedRoute.protectedRoute, requestController.sendRequest);
 router.get("/request/fetchall",  requestController.fetchAll);
 
+router.post(
+  "/parent/registration",
+  parentController.uploadProfilePic,
+  parentController.parentRegister
+);
+router.post("/parent/login", parentController.parentLogin);
+router.post("/parent/forgotpassword", parentController.parentForgotPassword);
+router.post(
+  "/parent/resetpassword/:email",
+  parentController.parentResetPassword
+);
+router.get(
+  "/parent/getparent/:id",
+  protectedRoute.protectedRoute,
+  parentController.getParentById
+);
+router.post(
+  "/parent/updateparent/:id",
+  protectedRoute.protectedRoute,
+  parentController.uploadProfilePic,
+  parentController.editParentById
+);
+router.post(
+  "/parent/addchild/:id",
+  protectedRoute.protectedRoute,
+  childController.addChildByParent
+);
+router.post(
+  "/parent/updatechild/:id/:childId",
+  protectedRoute.protectedRoute,
+  childController.editChildByParent
+);
+router.get(
+  "/parent/getchild/:id/:childId",
+  protectedRoute.protectedRoute,
+  childController.getOneChildDetail
+);
+router.get(
+  "/parent/getallchild",
+  protectedRoute.protectedRoute,
+  childController.getallChildDetails
+);
+router.get(
+  "/parent/getallchildofparent/:id",
+  protectedRoute.protectedRoute,
+  childController.getAllChildOfParent
+);
+router.delete(
+  "/parent/deletechild/:id/:childId",
+  protectedRoute.protectedRoute,
+  childController.deleteChildByParent
+);
+
 /* ===================== CHAT ===================== */
 router.post("/conversations", protectedRoute.protectedRoute, chatController.createConversation);
 router.get("/conversations/user/:userId", protectedRoute.protectedRoute, chatController.getUserConversations);
@@ -117,6 +172,7 @@ router.get("/conversations/:id", protectedRoute.protectedRoute, chatController.g
 router.post("/conversations/:id/messages", protectedRoute.protectedRoute, chatController.addMessage);
 router.patch("/conversations/:id/read", protectedRoute.protectedRoute, chatController.markAsRead);
 router.get("/parent/conversations/:parentId", protectedRoute.protectedRoute, chatController.getUserConversations);
+
 
 /* ===================== ACTIVITY ===================== */
 router.post(

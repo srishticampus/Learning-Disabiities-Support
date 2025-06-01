@@ -28,6 +28,8 @@ import { jwtDecode } from 'jwt-decode';
 import axios from "axios";
 import Backdrop from '@mui/material/Backdrop';
 import EducatorViewParentDetails from './Common/EducatorViewParentDetails';
+import { toast } from 'react-toastify';
+import { baseUrl } from '../../baseUrl';
 
 const EducatorHome = () => {
     const homebg = {
@@ -39,7 +41,7 @@ const EducatorHome = () => {
     const fetchEducator = async () => {
         const token = localStorage.getItem('token');
         const decoded = jwtDecode(token);
-        const response = await axios.get(`http://localhost:4000/ldss/educator/geteducator/${decoded.id}`, {
+        const response = await axios.get(`${baseUrl}educator/geteducator/${decoded.id}`, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
